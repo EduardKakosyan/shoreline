@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Weather Now — current conditions &amp; 5-day forecast</title>
+    <meta
+      name="description"
+      content="Weather Now: search a city for current conditions, a 24-hour strip and a five-day forecast."
+    />
+    <script>
+      /* Theme must be applied before first paint: no flash of the wrong theme. */
+      (function () {
+        var KEY = "wn.theme.v1";
+        var stored = null;
+        try {
+          stored = localStorage.getItem(KEY);
+        } catch (e) {}
+        var theme =
+          stored === "dark" || stored === "light"
+            ? stored
+            : window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light";
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+    <link rel="stylesheet" href="./styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f5fd6'/%3E%3Ccircle cx='13' cy='13' r='5' fill='%23ffd98a'/%3E%3Cpath d='M12 22h9a4 4 0 0 0 .4-8 6 6 0 0 0-11.5-1.4A4.5 4.5 0 0 0 12 22z' fill='white'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="app-header">
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+              <circle cx="9.4" cy="9.2" r="3.6" fill="#f5a623" />
+              <path
+                d="M8.6 18.6h7.6a3.1 3.1 0 0 0 .3-6.2 4.8 4.8 0 0 0-9.2-1.1 3.7 3.7 0 0 0 1.3 7.3z"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+          <span>
+            <span class="brand__name">Weather&nbsp;Now</span>
+            <span class="brand__tag">Live conditions, five-day outlook</span>
+          </span>
+        </div>
+        <div class="header__actions">
+          <button
+            type="button"
+            class="icon-btn"
+            data-testid="theme-toggle"
+            aria-label="Theme"
+            title="Switch light / dark theme"
+          >
+            <svg class="theme-icon--sun" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" focusable="false" fill="none">
+              <circle cx="12" cy="12" r="4.3" fill="currentColor" />
+              <path
+                d="M12 2.4v2.4M12 19.2v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.4 12h2.4M19.2 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+              />
+            </svg>
+            <svg class="theme-icon--moon" viewBox="0 0 24 24" width="21" height="21" aria-hidden="true" focusable="false" fill="none">
+              <path d="M13.8 3.2a8.8 8.8 0 1 0 7 12.9A7.3 7.3 0 0 1 13.8 3.2z" fill="currentColor" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <form class="search" id="search-form" autocomplete="off">
+        <div class="search__field">
+          <label class="search__label" for="city-input">City</label>
+          <input
+            class="search__input"
+            id="city-input"
+            name="city"
+            type="text"
+            inputmode="search"
+            spellcheck="false"
+            placeholder="Search a city, e.g. Lisbon"
+            aria-describedby="search-help"
+          />
+          <span id="search-help" class="visually-hidden"
+            >Type a place name and press Enter to search.</span
+          >
+        </div>
+        <button class="btn search__submit" type="submit">
+          <span id="search-icon" aria-hidden="true"></span>
+          <span>Search</span>
+        </button>
+        <button
+          type="button"
+          class="unit-toggle"
+          data-testid="unit-toggle"
+          data-unit="C"
+          aria-label="Current unit is Celsius. Switch to Fahrenheit"
+        >
+          <span class="unit-toggle__dial" aria-hidden="true"><span class="u-c">°C</span></span>
+        </button>
+      </form>
+
+      <p class="visually-hidden" id="live-status" role="status" aria-live="polite"></p>
+
+      <section class="skeleton" data-testid="loading" hidden aria-hidden="true">
+        <div class="sk sk-hero"></div>
+        <div class="sk-strip">
+          <div class="sk sk-hour"></div>
+          <div class="sk sk-hour"></div>
+          <div class="sk sk-hour"></div>
+          <div class="sk sk-hour"></div>
+          <div class="sk sk-hour"></div>
+        </div>
+        <div class="sk sk-line" style="width: 38%"></div>
+        <div class="sk sk-day"></div>
+        <div class="sk sk-day"></div>
+        <div class="sk sk-day"></div>
+      </section>
+
+      <section class="empty-state" data-testid="empty-state">
+        <svg class="empty-state__art" viewBox="0 0 168 120" aria-hidden="true" focusable="false" fill="none">
+          <defs>
+            <linearGradient id="art-sky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="var(--art-sky-1)" />
+              <stop offset="1" stop-color="var(--art-sky-2)" />
+            </linearGradient>
+          </defs>
+          <circle cx="84" cy="58" r="46" fill="url(#art-sky)" />
+          <circle cx="66" cy="42" r="15" fill="var(--art-sun)" />
+          <path
+            d="M60 74h34a11 11 0 0 0 1.2-21.9A21 21 0 0 0 55.6 47 15.5 15.5 0 0 0 60 74z"
+            fill="var(--art-cloud)"
+          />
+          <path
+            d="M104 96h26a8.4 8.4 0 0 0 .9-16.7 16 16 0 0 0-30-3.6 11.8 11.8 0 0 0 3.1 20.3z"
+            fill="var(--art-cloud-2)"
+          />
+          <path
+            d="M70 92l-3 8M82 92l-3 8M94 92l-3 8"
+            stroke="var(--art-rain)"
+            stroke-width="3.4"
+            stroke-linecap="round"
+          />
+          <circle cx="34" cy="26" r="3" fill="var(--art-spark)" />
+          <circle cx="140" cy="34" r="4" fill="var(--art-spark)" />
+          <circle cx="126" cy="18" r="2.4" fill="var(--art-spark)" />
+        </svg>
+        <h1 class="empty-state__title">Where are we checking?</h1>
+        <p class="empty-state__text">
+          Type any place name above — a city, a town, an island — and we’ll show the sky right now,
+          the next 24 hours and the next five days.
+        </p>
+        <div class="empty-state__hints">
+          <span class="hint-pill" id="hint-1" aria-hidden="true"></span>
+          <span class="hint-pill" id="hint-2" aria-hidden="true"></span>
+          <span class="hint-pill" id="hint-3" aria-hidden="true"></span>
+        </div>
+      </section>
+
+      <section data-testid="match-list" aria-labelledby="match-heading" hidden>
+        <div class="section__head">
+          <h2 class="section__title" id="match-heading">Pick a place</h2>
+          <span class="section__note" id="match-count"></span>
+        </div>
+        <div class="match-list" id="match-options"></div>
+      </section>
+
+      <section
+        class="panel panel--notice"
+        data-testid="notice"
+        role="status"
+        aria-live="polite"
+        hidden
+      >
+        <span class="panel__icon" id="notice-icon" aria-hidden="true"></span>
+        <div class="panel__body">
+          <p class="panel__title">No match for that one</p>
+          <p class="panel__text" id="notice-text"></p>
+        </div>
+      </section>
+
+      <section class="panel panel--error" data-testid="error" role="alert" hidden>
+        <span class="panel__icon" id="error-icon" aria-hidden="true"></span>
+        <div class="panel__body">
+          <p class="panel__title">The forecast didn’t come through</p>
+          <p class="panel__text" id="error-text"></p>
+          <button class="btn" type="button" data-testid="try-again" id="try-again">
+            <span aria-hidden="true" id="try-again-icon"></span>
+            <span>Try again</span>
+          </button>
+        </div>
+      </section>
+
+      <section data-testid="current-weather" id="current-weather" hidden></section>
+
+      <section class="section" data-testid="hourly" id="hourly-section" hidden>
+        <div class="section__head">
+          <h2 class="section__title">Next 24 hours</h2>
+          <span class="section__note">Scroll for more</span>
+        </div>
+        <div class="strip-wrap">
+          <div class="strip" id="hour-strip"></div>
+        </div>
+      </section>
+
+      <section class="section" data-testid="forecast-days" id="forecast-section" hidden>
+        <div class="section__head">
+          <h2 class="section__title">5-day forecast</h2>
+          <span class="section__note" id="forecast-note"></span>
+        </div>
+        <div class="days" id="day-list"></div>
+      </section>
+
+      <section class="recent" data-testid="recents" aria-labelledby="recents-heading">
+        <div class="recent__head">
+          <h2 class="recent__title" id="recents-heading">Recent searches</h2>
+          <button
+            type="button"
+            class="clear-recents"
+            data-testid="clear-recents"
+            aria-label="Clear recent list"
+            id="clear-recents"
+            hidden
+          >
+            <span aria-hidden="true" id="clear-icon"></span>
+            <span>Clear</span>
+          </button>
+        </div>
+        <div class="chips" id="recent-chips"></div>
+        <p class="empty-hint" id="recent-hint">
+          Cities you open land here for one-tap look-ups.
+        </p>
+      </section>
+
+      <p class="footnote">Weather data from Open-Meteo · temperatures in the metric source unit</p>
+    </div>
+
+    <script src="./icons.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
