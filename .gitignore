@@ -5,3 +5,5 @@ playwright-report/
 audit/shot-*.png
 audit/scene-*.png
 __pycache__/
+audit/look-*.png
+audit/look.json
