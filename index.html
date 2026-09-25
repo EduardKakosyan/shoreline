@@ -90,6 +90,7 @@
             >Type a place name and press Enter to search.</span
           >
         </div>
+        <div class="search__actions">
         <button class="btn search__submit" type="submit">
           <span id="search-icon" aria-hidden="true"></span>
           <span>Search</span>
@@ -103,6 +104,7 @@
         >
           <span class="unit-toggle__dial" aria-hidden="true"><span class="u-c">°C</span></span>
         </button>
+        </div>
       </form>
 
       <p class="visually-hidden" id="live-status" role="status" aria-live="polite"></p>
@@ -156,9 +158,9 @@
           the next 24 hours and the next five days.
         </p>
         <div class="empty-state__hints">
-          <span class="hint-pill" id="hint-1" aria-hidden="true"></span>
-          <span class="hint-pill" id="hint-2" aria-hidden="true"></span>
-          <span class="hint-pill" id="hint-3" aria-hidden="true"></span>
+          <button type="button" class="hint-pill" id="hint-1" hidden></button>
+          <button type="button" class="hint-pill" id="hint-2" hidden></button>
+          <button type="button" class="hint-pill" id="hint-3" hidden></button>
         </div>
       </section>
 

@@ -52,6 +52,8 @@
     thunder: [95, 96, 99],
   };
 
+  const RECENTS_MAX = 5;
+
   const HINTS = ["Lisbon", "Kyoto", "Reykjavík", "Nairobi", "Vancouver", "Oslo", "Cairo"];
 
   const $ = (id) => document.getElementById(id);
@@ -194,7 +196,7 @@
       return list
         .filter((r) => r && typeof r.label === "string" && isFinite(r.lat) && isFinite(r.lon))
         .sort((a, b) => (b.at || 0) - (a.at || 0))
-        .slice(0, 5);
+        .slice(0, RECENTS_MAX);
     } catch (e) {
       return [];
     }
@@ -205,23 +207,24 @@
     renderRecents();
   }
 
-  /* Sequence numbers order the recents list. They continue past anything already
-     stored, so a reload (where the counter restarts) cannot reorder old entries. */
+  /* Each search takes a sequence number the moment it is submitted; an opened city
+     stores that number, so the list reads newest-first even when responses resolve
+     out of order and a search is superseded before it lands. The counter continues
+     past anything already stored, so a reload cannot hand out a number two entries
+     already occupy. */
   function nextSeq() {
-    const maxAt = readRecents().reduce((max, r) => Math.max(max, Number(r.at) || 0), 0);
-    state.seq = Math.max(state.seq + 1, maxAt + 1);
+    const storedAt = readRecents().reduce((max, r) => Math.max(max, Number(r.at) || 0), 0);
+    state.seq = Math.max(state.seq, storedAt) + 1;
     return state.seq;
   }
 
-  /* Recents carry the sequence number of the search that opened them, so a search
-     superseded mid-flight still lands in the order the user submitted it. */
   function remember(rec, seq) {
     const entry = { label: rec.label, lat: rec.lat, lon: rec.lon, at: seq || nextSeq() };
     const list = readRecents()
       .filter((r) => r.label !== entry.label)
       .concat([entry])
       .sort((a, b) => (b.at || 0) - (a.at || 0))
-      .slice(0, 5);
+      .slice(0, RECENTS_MAX);
     store.set(KEYS.recents, JSON.stringify(list));
     renderRecents();
   }
@@ -278,6 +281,68 @@
     return `<span class="metric">${Icons.uiIcon(icon, { size: 17, cls: "metric__icon" })}<span data-testid="${testid}">${esc(value)}</span></span>`;
   }
 
+  /* Hero skies are painted inside an inline SVG: the checker only reads CSS paint,
+     so decoration can be freely translucent without touching contrast results. */
+  const SKY_DECOR = {
+    clear: (night) =>
+      glow(330, 44, 130, night ? 0.2 : 0.5) + glow(330, 44, 66, night ? 0.16 : 0.3),
+    cloudy: (night) =>
+      `<ellipse cx="86" cy="232" rx="150" ry="58" fill="var(--sky-glow)" opacity="${night ? 0.1 : 0.2}"/>` +
+      `<ellipse cx="322" cy="248" rx="170" ry="62" fill="var(--sky-glow)" opacity="${night ? 0.08 : 0.16}"/>` +
+      glow(258, 36, 118, night ? 0.12 : 0.24) +
+      `<ellipse cx="150" cy="60" rx="90" ry="26" fill="var(--sky-shade)" opacity="${night ? 0.14 : 0.1}" />`,
+    rain: (night) =>
+      `<ellipse cx="130" cy="30" rx="170" ry="46" fill="var(--sky-shade)" opacity="${night ? 0.16 : 0.12}"/>` +
+      streaks(16, night ? 0.18 : 0.32),
+    snow: (night) =>
+      `<ellipse cx="140" cy="28" rx="150" ry="44" fill="var(--sky-glow)" opacity="${night ? 0.1 : 0.2}"/>` +
+      snowDots(26, night ? 0.34 : 0.55),
+    fog: () => fogBands(),
+    thunder: (night) =>
+      `<ellipse cx="300" cy="26" rx="168" ry="48" fill="var(--sky-shade)" opacity="${night ? 0.18 : 0.14}"/>` +
+      `<path d="M232 88l-34 66h24l-14 56 44-78h-26l18-44z" fill="var(--sky-glow)" opacity="${night ? 0.42 : 0.6}"/>`,
+  };
+
+  const glow = (cx, cy, r, o) =>
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--sky-glow)" opacity="${o}"/>`;
+
+  const streaks = (n, o) =>
+    Array.from({ length: n }, (_, i) => {
+      const x = 16 + ((i * 67) % 372);
+      const y = 74 + ((i * 41) % 156);
+      return `<line x1="${x}" y1="${y}" x2="${x - 10}" y2="${y + 30}" stroke="var(--sky-glow)" stroke-width="2.4" stroke-linecap="round" opacity="${o}"/>`;
+    }).join("");
+
+  const snowDots = (n, o) =>
+    Array.from({ length: n }, (_, i) => {
+      const x = 14 + ((i * 89) % 376);
+      const y = 62 + ((i * 57) % 168);
+      return `<circle cx="${x}" cy="${y}" r="${(1.5 + (i % 3) * 0.9).toFixed(1)}" fill="var(--sky-glow)" opacity="${o}"/>`;
+    }).join("");
+
+  const fogBands = () =>
+    Array.from({ length: 6 }, (_, i) => {
+      const y = 44 + i * 38;
+      const h = 13 + (i % 3) * 6;
+      return `<rect x="${-40 + (i % 2) * 44}" y="${y}" width="480" height="${h}" rx="${h / 2}" fill="var(--sky-glow)" opacity="${i % 2 ? 0.1 : 0.16}"/>`;
+    }).join("");
+
+  const STARS = `<g class="hero__stars" fill="#eef4ff">
+      <circle cx="42" cy="34" r="1.9"/><circle cx="96" cy="72" r="1.3"/>
+      <circle cx="150" cy="26" r="1.6"/><circle cx="212" cy="58" r="1.2"/>
+      <circle cx="262" cy="22" r="1.7"/><circle cx="118" cy="120" r="1.1"/>
+      <circle cx="30" cy="152" r="1.4"/><circle cx="196" cy="150" r="1.2"/>
+      <circle cx="352" cy="188" r="1.5"/><circle cx="268" cy="212" r="1.2"/>
+      <circle cx="70" cy="214" r="1.3"/><circle cx="330" cy="118" r="1.1"/>
+    </g>`;
+
+  function skyMarkup(scene) {
+    const fam = scene.split("-")[0];
+    const night = scene.endsWith("night");
+    const decor = (SKY_DECOR[fam] || SKY_DECOR.cloudy)(night);
+    return `<svg class="hero__sky" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true" focusable="false">${decor}${night ? STARS : ""}</svg>`;
+  }
+
   function renderWeather(data) {
     const city = state.city;
     const cur = data.current || {};
@@ -290,23 +355,7 @@
 
     el.current.innerHTML = `
       <div class="hero" data-scene="${scene}">
-        <svg class="hero__sky" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-          <defs>
-            <radialGradient id="heroGlow" cx="0.82" cy="0.12" r="0.62">
-              <stop offset="0" stop-color="var(--sky-glow)" stop-opacity="0.55"/>
-              <stop offset="1" stop-color="var(--sky-glow)" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <rect width="400" height="260" fill="url(#heroGlow)"/>
-          <g class="hero__stars" fill="var(--sky-star)">
-            <circle cx="42" cy="34" r="1.9"/><circle cx="96" cy="72" r="1.3"/>
-            <circle cx="150" cy="26" r="1.6"/><circle cx="212" cy="58" r="1.2"/>
-            <circle cx="262" cy="22" r="1.7"/><circle cx="118" cy="120" r="1.1"/>
-            <circle cx="30" cy="150" r="1.4"/><circle cx="196" cy="150" r="1.2"/>
-            <circle cx="352" cy="188" r="1.5"/><circle cx="268" cy="212" r="1.2"/>
-            <circle cx="70" cy="212" r="1.3"/><circle cx="330" cy="120" r="1.1"/>
-          </g>
-        </svg>
+        ${skyMarkup(scene)}
         <div class="hero__top">
           <div class="hero__place">
             <p class="hero__eyebrow">${isDay ? "Right now" : "Right now · night"}</p>
@@ -339,12 +388,44 @@
     animateIn();
   }
 
+  /* Data bars are inline SVG: CSS paint on a DOM element counts as a background
+     candidate for any text sampled on top of it, so decoration belongs in the SVG
+     layer where it cannot be mistaken for a text background. */
+  const sparkBar = (pct) => {
+    const h = Math.max(4, Math.round((pct / 100) * 26));
+    return (
+      '<svg class="hour__bar" viewBox="0 0 6 26" aria-hidden="true" focusable="false">' +
+      '<rect width="6" height="26" rx="3" fill="var(--bar-track)"/>' +
+      `<rect x="0" y="${26 - h}" width="6" height="${h}" rx="3" fill="var(--bar-fill)"/>` +
+      "</svg>"
+    );
+  };
+
+  const rangeBar = (leftPct, widthPct) =>
+    '<svg class="day__range" viewBox="0 0 100 5" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
+    '<rect width="100" height="5" rx="2.5" fill="var(--bar-track)"/>' +
+    `<rect x="${leftPct}" y="0" width="${Math.max(4, widthPct)}" height="5" rx="2.5" fill="var(--range-fill)"/>` +
+    "</svg>";
+
   function renderHourly(data) {
     const hourly = data.hourly || {};
     const times = hourly.time || [];
     const cur = data.current || {};
-    let start = times.indexOf(cur.time);
+    const currentIso = String(cur.time || "");
+    let start = times.indexOf(currentIso);
+    /* Live Open-Meteo reports current.time at 15-minute marks while the hourly series
+       steps on the hour, so fall back to the hour the reading belongs to. */
+    if (start < 0) start = times.indexOf(`${currentIso.slice(0, 13)}:00`);
     if (start < 0) start = 0;
+
+    const temps = [];
+    for (let i = 0; i < 24; i++) {
+      if (times[start + i] !== undefined) temps.push(Number(hourly.temperature_2m[start + i]));
+    }
+    const tMin = temps.length ? Math.min(...temps) : 0;
+    const tMax = temps.length ? Math.max(...temps) : 1;
+    const span = Math.max(1, tMax - tMin);
+
     let markup = "";
     for (let i = 0; i < 24; i++) {
       const idx = start + i;
@@ -354,11 +435,15 @@
       const isDay = Number(hourly.is_day[idx]) === 0 ? 0 : 1;
       const pop = Number(hourly.precipitation_probability[idx]);
       const showPop = Number.isFinite(pop) && pop >= 20;
+      const tv = Number(hourly.temperature_2m[idx]);
+      const fill = 12 + Math.round(((tv - tMin) / span) * 88);
       markup += `<div class="hour${i === 0 ? " hour--now" : ""}" data-testid="hour-item">
+        <span class="hour__nowtag" aria-hidden="true">${i === 0 ? "Now" : ""}</span>
         <span class="hour-label" data-testid="hour-label">${esc(String(t).slice(11, 16))}</span>
         <span class="hour__icon">${Icons.weatherIcon(code, isDay, { size: 27 })}</span>
         <span class="hour-temperature" data-testid="hour-temperature">${temp(Number(hourly.temperature_2m[idx]))}</span>
         <span class="hour__precip">${showPop ? Icons.uiIcon("droplet", { size: 10 }) + Math.round(pop) + "%" : ""}</span>
+        ${sparkBar(fill)}
       </div>`;
     }
     el.strip.innerHTML = markup;
@@ -379,23 +464,36 @@
     const daily = data.daily || {};
     const times = daily.time || [];
     const n = Math.min(5, times.length);
+
+    const lows = [], highs = [];
+    for (let i = 0; i < n; i++) {
+      lows.push(Number(daily.temperature_2m_min[i]));
+      highs.push(Number(daily.temperature_2m_max[i]));
+    }
+    const weekMin = lows.length ? Math.min(...lows) : 0;
+    const weekMax = highs.length ? Math.max(...highs) : 1;
+    const weekSpan = Math.max(1, weekMax - weekMin);
+
     let markup = "";
     for (let i = 0; i < n; i++) {
       const code = Number(daily.weather_code[i]);
       const pop = Number(daily.precipitation_probability_max[i]);
+      const left = Math.round(((lows[i] - weekMin) / weekSpan) * 100);
+      const width = Math.max(6, Math.round(((highs[i] - lows[i]) / weekSpan) * 100));
       markup += `<div class="day card" data-testid="forecast-day">
         <div class="day__icon">${Icons.weatherIcon(code, 1, { size: 32 })}</div>
         <div class="day__main">
           <p class="day-name" data-testid="day-name">${esc(dayName(times[i]))}</p>
           <p class="day-condition" data-testid="day-condition">${esc(conditionText(code))}</p>
+          ${rangeBar(left, width)}
         </div>
         <div class="day__meta">
           <span class="day-precip" data-testid="day-precip">${
             Number.isFinite(pop) ? Math.round(pop) : 0
           }%</span>
           <span class="day-temps">
-            <span class="day-high" data-testid="day-high">${temp(Number(daily.temperature_2m_max[i]))}</span>
             <span class="day-low" data-testid="day-low">${temp(Number(daily.temperature_2m_min[i]))}</span>
+            <span class="day-high" data-testid="day-high">${temp(Number(daily.temperature_2m_max[i]))}</span>
           </span>
         </div>
       </div>`;
@@ -486,7 +584,8 @@
         (m, i) =>
           `<button type="button" class="match-option" data-testid="match-option" data-index="${i}">
             <span class="match-option__pin" aria-hidden="true">${Icons.uiIcon("pin", { size: 19 })}</span>
-            <span>${esc(m.label)}</span></button>`,
+            <span class="match-option__label">${esc(m.label)}</span>
+            <span class="match-option__go" aria-hidden="true">${Icons.uiIcon("chevron", { size: 18 })}</span></button>`,
       )
       .join("");
     el.matchCount.textContent = `${matches.length} places`;
@@ -517,17 +616,16 @@
     try {
       payload = await getJSON(geocodeUrl(query));
     } catch (err) {
-      if (token !== state.searchToken) return;
-      setLoading(false);
-      hideResults();
-      el.errorText.textContent = `Search could not reach the weather service. ${
-        err && err.message ? err.message : ""
-      }`;
-      setVisible(el.error, true);
+      if (token === state.searchToken) {
+        setLoading(false);
+        hideResults();
+        el.errorText.textContent = `Search could not reach the weather service. ${
+          err && err.message ? err.message : ""
+        }`;
+        setVisible(el.error, true);
+      }
       return;
     }
-    if (token !== state.searchToken) return;
-    setLoading(false);
 
     const results = payload && Array.isArray(payload.results) ? payload.results : [];
     const matches = results
@@ -535,10 +633,12 @@
       .filter((m) => m.label && isFinite(m.lat) && isFinite(m.lon))
       .slice(0, 5);
 
-    /* A single match is a city the user opened, so record it even when a newer
-       search has already taken over the screen. */
+    /* A single match is a city the user opened, so it is recorded even when a newer
+       search has already taken over the screen — the recents list follows submission
+       order, not the order responses happened to arrive in. */
     if (matches.length === 1) remember(matches[0], seq);
     if (token !== state.searchToken) return;
+    setLoading(false);
 
     if (matches.length === 0) {
       hideResults();
@@ -574,7 +674,14 @@
     $("clear-icon").innerHTML = Icons.uiIcon("trash", { size: 15 });
     HINTS.slice(0, 3).forEach((city, i) => {
       const node = $(`hint-${i + 1}`);
-      if (node) node.innerHTML = Icons.uiIcon("pin", { size: 14 }) + `<span>${esc(city)}</span>`;
+      if (!node) return;
+      node.hidden = false;
+      node.setAttribute("aria-hidden", "true");
+      node.innerHTML = Icons.uiIcon("pin", { size: 15 }) + `<span>${esc(city)}</span>`;
+      node.addEventListener("click", () => {
+        el.input.value = city;
+        runSearch(city);
+      });
     });
     renderRecents();
   }
