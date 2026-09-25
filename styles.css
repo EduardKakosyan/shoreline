@@ -90,11 +90,35 @@
   --night-card-text: #eaf1ff;
   --night-card-muted: #bccae3;
 
-  /* sun/moon accent for the inline SVG weather icons (decorative: SVG paint is
-     never sampled for text contrast, but it must still read on every sky) */
-  --icon-accent: #a35f00;
-  --icon-accent-hero-day: #8f5200;
+  /* Sun / moon / bolt for the inline SVG weather icons. Decorative: SVG paint is
+     never sampled for text contrast, so these chase recognition, not ratios —
+     a sun has to read as sunshine on every surface it lands on. */
+  --icon-accent: #b06a10;
+  --sun-core: #f9b01c;
+  --sun-ray: #dd8c05;
+  --sun-rim: #a86208;
+  --sun-glow: rgba(249, 184, 28, 0.3);
+  --moon-fill: #8fa6c6;
+  --bolt-fill: #f2a413;
+
+  /* same marks, sitting on the hero sky */
+  --icon-accent-hero-day: #ffb32e;
+  --sun-core-hero-day: #ffd23f;
+  --sun-ray-hero-day: #ffb02e;
+  --sun-rim-hero-day: #cf7d00;
+  --sun-glow-hero-day: rgba(255, 214, 84, 0.45);
   --icon-accent-hero-night: #ffd98a;
+  --moon-fill-hero-night: #e3edff;
+  --bolt-fill-hero: #ffc93c;
+
+  /* Temperature gets one colour language, cold -> hot, deep enough to sit on a
+     card and on its hover surface without washing out. */
+  --temp-cold: #24599e;
+  --temp-cool: #1d668d;
+  --temp-mild: #6d520a;
+  --temp-warm: #9c4413;
+  --temp-hot: #932a2a;
+  --rail-track: #ccd6e6;
 
   --shadow-1: 0 1px 2px rgba(14, 23, 40, 0.07), 0 8px 20px -12px rgba(14, 23, 40, 0.22);
   --shadow-2: 0 2px 6px rgba(14, 23, 40, 0.1), 0 18px 38px -18px rgba(14, 23, 40, 0.32);
@@ -131,6 +155,29 @@ html[data-theme="dark"] {
 
   --hero-chip-bg: rgba(255, 255, 255, 0.44);
   --icon-accent: #ffc65c;
+  --sun-core: #ffc23a;
+  --sun-ray: #ffb42e;
+  --sun-rim: #d98a12;
+  --sun-glow: rgba(255, 196, 58, 0.26);
+  --moon-fill: #cfdcf5;
+  --bolt-fill: #ffc23a;
+
+  --icon-accent-hero-day: #ffce55;
+  --sun-core-hero-day: #ffdf6b;
+  --sun-ray-hero-day: #ffc53d;
+  --sun-rim-hero-day: #e09a1e;
+  --sun-glow-hero-day: rgba(255, 214, 84, 0.34);
+  --icon-accent-hero-night: #ffd98a;
+  --moon-fill-hero-night: #eaf2ff;
+  --bolt-fill-hero: #ffd45c;
+
+  /* daytime skies are re-tokened below (html[data-theme=dark] .hero…) */
+  --temp-cold: #7fb2ff;
+  --temp-cool: #6fc6e8;
+  --temp-mild: #ffd98a;
+  --temp-warm: #ffb27a;
+  --temp-hot: #ff9ea3;
+  --rail-track: #33415c;
 
   /* night hours go deeper than the dark surface rather than inverting */
   --night-card: #070d18;
@@ -256,18 +303,18 @@ svg {
   html[data-theme="dark"] .sk::after {
     background-image: linear-gradient(90deg, #ffffff00, #ffffff17, #ffffff00);
   }
-  .hero[data-scene$="night"] .hero__stars {
+  .hero__texture .hero__stars {
     animation: twinkle 4.5s var(--ease) infinite alternate;
   }
   /* Sky life: transform-only, on decorative SVG groups, so nothing that text is
      sampled against ever sits at partial opacity or shifts layout. */
-  .hero__sky .sky-fog {
+  .hero__texture .sky-fog {
     animation: fog-drift 24s var(--ease) infinite alternate;
   }
-  .hero__sky .sky-rain {
+  .hero__texture .sky-rain {
     animation: sky-bob 2.2s ease-in-out infinite alternate;
   }
-  .hero__sky .sky-snow {
+  .hero__texture .sky-snow {
     animation: snow-sway 7s ease-in-out infinite alternate;
   }
 }
@@ -590,6 +637,29 @@ html[data-theme="dark"] .theme-icon--moon {
   border-color: rgba(0, 0, 0, 0.45);
 }
 
+/* The dark theme never shows a lit screen: daytime skies here are the same
+   conditions read at dusk, so the hero keeps its meaning without glaring out of
+   a near-black page. Light ink, because these skies are deep. */
+html[data-theme="dark"] .hero[data-scene$="day"] {
+  color: var(--hero-text-night);
+  border-color: rgba(0, 0, 0, 0.45);
+}
+html[data-theme="dark"] .hero[data-scene="clear-day"]   { --hero-1: #131f36; --hero-2: #1c2e4d; --hero-3: #33241b; --hero-solid: #1c2e4d; }
+html[data-theme="dark"] .hero[data-scene="cloudy-day"]  { --hero-1: #20272f; --hero-2: #2b333d; --hero-3: #3a4552; --hero-solid: #2b333d; }
+html[data-theme="dark"] .hero[data-scene="rain-day"]    { --hero-1: #0d1a29; --hero-2: #142a38; --hero-3: #20404e; --hero-solid: #142a38; }
+html[data-theme="dark"] .hero[data-scene="snow-day"]    { --hero-1: #182531; --hero-2: #223944; --hero-3: #2c4c57; --hero-solid: #223944; }
+html[data-theme="dark"] .hero[data-scene="fog-day"]     { --hero-1: #1f1f24; --hero-2: #2a2b33; --hero-3: #3a3842; --hero-solid: #2a2b33; }
+html[data-theme="dark"] .hero[data-scene="thunder-day"] { --hero-1: #181330; --hero-2: #241d42; --hero-3: #33255a; --hero-solid: #241d42; }
+html[data-theme="dark"] .hero[data-scene$="day"] .hero__eyebrow,
+html[data-theme="dark"] .hero[data-scene$="day"] .feels-line {
+  color: var(--hero-muted-night);
+}
+html[data-theme="dark"] .hero[data-scene$="day"] .metric {
+  background: var(--hero-chip-bg-night);
+  color: var(--hero-chip-text-night);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 .hero[data-scene="clear-day"]     { --hero-1: var(--hero-clear-day-1); --hero-2: var(--hero-clear-day-2); --hero-3: var(--hero-clear-day-3); --hero-solid: var(--hero-clear-day-2); }
 .hero[data-scene="clear-night"]   { --hero-1: var(--hero-clear-night-1); --hero-2: var(--hero-clear-night-2); --hero-3: var(--hero-clear-night-3); --hero-solid: var(--hero-clear-night-2); }
 .hero[data-scene="cloudy-day"]    { --hero-1: var(--hero-cloudy-day-1); --hero-2: var(--hero-cloudy-day-2); --hero-3: var(--hero-cloudy-day-3); --hero-solid: var(--hero-cloudy-day-2); }
@@ -603,10 +673,12 @@ html[data-theme="dark"] .theme-icon--moon {
 .hero[data-scene="thunder-day"]   { --hero-1: var(--hero-thunder-day-1); --hero-2: var(--hero-thunder-day-2); --hero-3: var(--hero-thunder-day-3); --hero-solid: var(--hero-thunder-day-2); }
 .hero[data-scene="thunder-night"] { --hero-1: var(--hero-thunder-night-1); --hero-2: var(--hero-thunder-night-2); --hero-3: var(--hero-thunder-night-3); --hero-solid: var(--hero-thunder-night-2); }
 
-.hero__sky {
+/* The sky's texture is clipped to the icon's own window, never painted across
+   the card: decoration that drifts behind text reads as dust on the screen. */
+.hero__texture {
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -654,15 +726,39 @@ html[data-theme="dark"] .theme-icon--moon {
   overflow-wrap: anywhere;
 }
 
+/* The icon sits in its own patch of sky: a rounded window with the weather's
+   texture inside it, clipped so nothing escapes onto the words. */
 .hero__icon {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  flex: none;
   width: 78px;
   height: 78px;
-  filter: drop-shadow(0 6px 14px rgba(6, 12, 24, 0.2));
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+  background: rgba(3, 9, 20, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 6px 16px -8px rgba(6, 12, 24, 0.4);
   --icon-accent: var(--icon-accent-hero-day);
+  --sun-core: var(--sun-core-hero-day);
+  --sun-ray: var(--sun-ray-hero-day);
+  --sun-rim: var(--sun-rim-hero-day);
+  --sun-glow: var(--sun-glow-hero-day);
+  --bolt-fill: var(--bolt-fill-hero);
 }
 
-.hero[data-scene$="night"] .hero__icon {
+.hero__icon > svg {
+  position: relative;
+  z-index: 1;
+}
+
+.hero[data-scene$="night"] .hero__icon,
+.hero__icon.icon--deep {
   --icon-accent: var(--icon-accent-hero-night);
+  --sun-rim: transparent;
+  --moon-fill: var(--moon-fill-hero-night);
 }
 
 .current-temperature {
@@ -836,8 +932,22 @@ html[data-theme="dark"] .theme-icon--moon {
 }
 
 .hour__icon {
+  position: relative;
   width: 27px;
   height: 27px;
+}
+
+/* A sun on a night hour card must not wear the same ochre it uses on a light
+   one, and vice versa: the mark follows the surface, not the theme. */
+.hour__icon.icon--deep,
+.day__icon.icon--deep {
+  --icon-accent: #ffc65c;
+  --sun-core: #ffc94a;
+  --sun-ray: #ffc94a;
+  --sun-rim: transparent;
+  --sun-glow: rgba(255, 201, 74, 0.24);
+  --moon-fill: #dbe7ff;
+  --bolt-fill: #ffc94a;
 }
 
 .hour-temperature {
@@ -861,11 +971,6 @@ html[data-theme="dark"] .theme-icon--moon {
 .hour__precip svg {
   width: 10px;
   height: 10px;
-}
-
-.hour__bar {
-  width: 6px;
-  height: 26px;
 }
 
 /* ==========================================================================
@@ -936,8 +1041,25 @@ html[data-theme="dark"] .theme-icon--moon {
 
 .day__range {
   width: 100%;
-  height: 5px;
+  height: 6px;
 }
+
+.rail-cap {
+  fill: rgba(255, 255, 255, 0.92);
+}
+
+.rail-fill--cold { fill: var(--temp-cold); }
+.rail-fill--cool { fill: var(--temp-cool); }
+.rail-fill--mild { fill: var(--temp-mild); }
+.rail-fill--warm { fill: var(--temp-warm); }
+.rail-fill--hot { fill: var(--temp-hot); }
+
+/* the high figure carries the same hue as its rail */
+.day-temps--cold .day-high { color: var(--temp-cold); }
+.day-temps--cool .day-high { color: var(--temp-cool); }
+.day-temps--mild .day-high { color: var(--temp-mild); }
+.day-temps--warm .day-high { color: var(--temp-warm); }
+.day-temps--hot .day-high { color: var(--temp-hot); }
 
 .day__meta {
   display: flex;
@@ -1155,9 +1277,10 @@ html[data-theme="dark"] .panel--error .btn:hover {
 }
 
 /* Shaped like the real hero / hour cards / day rows so results do not jump
-   the page when they replace the skeleton. */
+   the page when they replace the skeleton (heights track the measured cards:
+   hero 445px, hour card 165px, day row 82px at 390px wide). */
 .sk-hero {
-  height: 424px;
+  height: 445px;
   border-radius: 24px;
   padding: 24px 22px;
   display: flex;
@@ -1440,50 +1563,45 @@ html[data-theme="dark"] .empty-state {
 }
 
 @media (min-width: 940px) {
+  /* A laptop should see now, the next hours and the week together: the hero and
+     the week sit side by side at their natural heights (nothing stretches to
+     fill a column), and the hours run full width beneath them. */
   .shell {
-    max-width: 68rem;
+    max-width: 72rem;
     display: grid;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
     grid-template-areas:
       "header  header"
       "search  search"
-      "panel   panel"
-      "hero    forecast"
-      "hourly  forecast"
+      "hero    week"
+      "hours   hours"
       "recents recents"
       "foot    foot";
-    column-gap: 24px;
-    row-gap: 22px;
-    align-content: start;
+    column-gap: 22px;
+    row-gap: 18px;
+    align-items: start;
+    padding: 0 28px 44px;
   }
   .app-header {
     grid-area: header;
+    padding: 18px 0 0;
   }
   .search {
     grid-area: search;
-    max-width: 44rem;
+    max-width: 46rem;
   }
   .skeleton, .empty-state, [data-testid="match-list"], [data-testid="notice"],
   [data-testid="error"] {
-    grid-area: panel;
+    grid-area: hero;
   }
   [data-testid="current-weather"] {
     grid-area: hero;
   }
   [data-testid="hourly"] {
-    grid-area: hourly;
+    grid-area: hours;
   }
   [data-testid="forecast-days"] {
-    grid-area: forecast;
-    min-height: 0;
-  }
-  /* Two columns must end at the same line: let the five day rows absorb the
-     leftover height instead of leaving a hole under the forecast. */
-  [data-testid="forecast-days"] .days {
-    flex: 1 1 auto;
-  }
-  [data-testid="forecast-days"] .day {
-    flex: 1 1 0;
+    grid-area: week;
   }
   .recent {
     grid-area: recents;
@@ -1492,17 +1610,26 @@ html[data-theme="dark"] .empty-state {
     grid-area: foot;
   }
   .hero {
-    padding: 32px 34px 28px;
-    gap: 20px;
+    padding: 24px 26px 22px;
+    gap: 16px;
   }
   .hero__icon {
-    width: 104px;
-    height: 104px;
+    width: 92px;
+    height: 92px;
+  }
+  .hero__chips {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .current-temperature {
-    font-size: 7.5rem;
+    font-size: 6.5rem;
+  }
+  .location-name {
+    font-size: 1.5rem;
   }
   .empty-state {
-    padding: 60px 40px 52px;
+    padding: 44px 34px 38px;
+  }
+  .day {
+    padding: 14px 16px;
   }
 }

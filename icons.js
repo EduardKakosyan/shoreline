@@ -22,12 +22,14 @@
     "M8.4 17.6h7.4a2.9 2.9 0 0 0 .3-5.8 4.4 4.4 0 0 0-8.4-1 3.4 3.4 0 0 0 .7 6.8z";
 
   const sun = (cx, cy, r) =>
-    `<g class="ic-sun"><circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--icon-accent, currentColor)" stroke="none" />` +
-    `<path d="${rays(cx, cy, r)}" stroke="var(--icon-accent, currentColor)" stroke-width="1.7" stroke-linecap="round" fill="none" /></g>`;
+    `<g class="ic-sun">` +
+    `<circle cx="${cx}" cy="${cy}" r="${(r * 1.5).toFixed(2)}" fill="var(--sun-glow, var(--icon-accent, currentColor))" stroke="none" />` +
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--sun-core, var(--icon-accent, currentColor))" stroke="var(--sun-rim, transparent)" stroke-width="0.6" />` +
+    `<path d="${rays(cx, cy, r)}" stroke="var(--sun-ray, var(--icon-accent, currentColor))" stroke-width="1.7" stroke-linecap="round" fill="none" /></g>`;
 
   const moon = (cx, cy, r) =>
     `<path d="M${cx + r * 0.55} ${cy - r * 0.95}a${r} ${r} 0 1 0 ${r * 0.72} ${r * 1.62} ` +
-    `a${r * 0.82} ${r * 0.82} 0 1 1 ${-r * 0.72} ${-r * 0.62}z" fill="var(--icon-accent, currentColor)" stroke="none" />`;
+    `a${r * 0.82} ${r * 0.82} 0 1 1 ${-r * 0.72} ${-r * 0.62}z" fill="var(--moon-fill, var(--icon-accent, currentColor))" stroke="none" />`;
 
   const drops = (n, y0, spread) => {
     const xs = n === 2 ? [9.8, 14.6] : n === 3 ? [8.6, 12, 15.4] : [7.6, 10.5, 13.5, 16.4];
@@ -86,7 +88,7 @@
       `<path d="M4 15.6h16M6.4 19h11.2M8.8 22.2h6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none" opacity="0.85" />`,
     thunder: () =>
       `<path d="${smallCloudPath}" fill="var(--ic-fill, currentColor)" fill-opacity="0.14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />` +
-      `<path d="M13.1 18.1l-3.4 4.2h2.5l-1 3.6 3.6-4.6h-2.4z" transform="translate(0 -3.1)" fill="var(--icon-accent, currentColor)" stroke="none" />`,
+      `<path d="M13.1 18.1l-3.4 4.2h2.5l-1 3.6 3.6-4.6h-2.4z" transform="translate(0 -3.1)" fill="var(--bolt-fill, var(--icon-accent, currentColor))" stroke="none" />`,
   };
 
   const UI = {

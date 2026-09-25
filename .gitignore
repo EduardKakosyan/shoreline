@@ -4,3 +4,4 @@ playwright-report/
 .cache/
 audit/shot-*.png
 audit/scene-*.png
+__pycache__/

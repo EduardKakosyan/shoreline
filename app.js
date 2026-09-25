@@ -286,76 +286,78 @@
     </div>`;
   }
 
-  /* Hero skies are painted inside an inline SVG: the checker only reads CSS paint,
-     so decoration can be freely translucent without touching contrast results. */
-  const SKY_DECOR = {
-    clear: (night) =>
-      glow(330, 44, 130, night ? 0.2 : 0.5) + glow(330, 44, 66, night ? 0.16 : 0.3),
-    cloudy: (night) =>
-      `<ellipse cx="86" cy="232" rx="150" ry="58" fill="var(--sky-glow)" opacity="${night ? 0.1 : 0.2}"/>` +
-      `<ellipse cx="322" cy="248" rx="170" ry="62" fill="var(--sky-glow)" opacity="${night ? 0.08 : 0.16}"/>` +
-      glow(258, 36, 118, night ? 0.12 : 0.24) +
-      `<ellipse cx="150" cy="60" rx="90" ry="26" fill="var(--sky-shade)" opacity="${night ? 0.14 : 0.1}" />`,
-    rain: (night) =>
-      `<ellipse cx="130" cy="30" rx="170" ry="46" fill="var(--sky-shade)" opacity="${night ? 0.16 : 0.12}"/>` +
-      streaks(16, night ? 0.18 : 0.32),
-    snow: (night) =>
-      `<ellipse cx="140" cy="28" rx="150" ry="44" fill="var(--sky-glow)" opacity="${night ? 0.1 : 0.2}"/>` +
-      snowDots(26, night ? 0.34 : 0.55),
-    fog: () => fogBands(),
-    thunder: (night) =>
-      `<ellipse cx="300" cy="26" rx="168" ry="48" fill="var(--sky-shade)" opacity="${night ? 0.18 : 0.14}"/>` +
-      `<path d="M232 88l-34 66h24l-14 56 44-78h-26l18-44z" fill="var(--sky-glow)" opacity="${night ? 0.42 : 0.6}"/>`,
-  };
+  /* Weather texture lives inside the hero's sky window (the badge behind the icon)
+     and nowhere else on the card. Discrete shapes scattered behind text read as
+     dust on the screen, so the window clips everything: a star can only ever be a
+     star in the sky, never inside a city name. All of it is inline SVG, which the
+     contrast sampler cannot see, so translucent decoration is free. */
+  const WINDOW = 100;
 
-  const glow = (cx, cy, r, o) =>
+  const stars = (n, o) =>
+    '<g class="hero__stars">' +
+    Array.from({ length: n }, (_, i) => {
+      const x = 10 + ((i * 37) % 82);
+      const y = 9 + ((i * 23) % 22);
+      return `<circle cx="${x}" cy="${y}" r="${(0.9 + (i % 3) * 0.45).toFixed(1)}" fill="#eef4ff" opacity="${o}"/>`;
+    }).join("") +
+    "</g>";
+
+  const haze = (cx, cy, r, o) =>
     `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--sky-glow)" opacity="${o}"/>`;
 
   const streaks = (n, o) =>
     '<g class="sky-rain">' +
     Array.from({ length: n }, (_, i) => {
-      const x = 16 + ((i * 67) % 372);
-      const y = 74 + ((i * 41) % 156);
-      return `<line x1="${x}" y1="${y}" x2="${x - 10}" y2="${y + 30}" stroke="var(--sky-glow)" stroke-width="2.4" stroke-linecap="round" opacity="${o}"/>`;
+      const x = 16 + ((i * 29) % 74);
+      const y = 54 + ((i * 17) % 32);
+      return `<line x1="${x}" y1="${y}" x2="${x - 4}" y2="${y + 12}" stroke="var(--sky-glow)" stroke-width="2.2" stroke-linecap="round" opacity="${o}"/>`;
     }).join("") +
     "</g>";
 
   const snowDots = (n, o) =>
     '<g class="sky-snow">' +
     Array.from({ length: n }, (_, i) => {
-      const x = 14 + ((i * 89) % 376);
-      const y = 62 + ((i * 57) % 168);
-      return `<circle cx="${x}" cy="${y}" r="${(1.5 + (i % 3) * 0.9).toFixed(1)}" fill="var(--sky-glow)" opacity="${o}"/>`;
+      const x = 14 + ((i * 41) % 76);
+      const y = 50 + ((i * 27) % 40);
+      return `<circle cx="${x}" cy="${y}" r="${(1.1 + (i % 3) * 0.7).toFixed(1)}" fill="var(--sky-glow)" opacity="${o}"/>`;
     }).join("") +
     "</g>";
 
-  /* Bands stay inside the 0..400 viewBox: an element wider than the viewport is
-     an overflow finding even when the hero clips it visually. */
-  const fogBands = () =>
+  const fogBands = (o) =>
     '<g class="sky-fog">' +
-    Array.from({ length: 6 }, (_, i) => {
-      const y = 44 + i * 38;
-      const h = 13 + (i % 3) * 6;
-      const inset = i % 2 ? 0 : 26;
-      return `<rect x="${inset}" y="${y}" width="${400 - inset * 2}" height="${h}" rx="${h / 2}" fill="var(--sky-glow)" opacity="${i % 2 ? 0.1 : 0.16}"/>`;
+    Array.from({ length: 4 }, (_, i) => {
+      const y = 20 + i * 20;
+      const h = 6 + (i % 2) * 3;
+      const inset = i % 2 ? 4 : 14;
+      return `<rect x="${inset}" y="${y}" width="${WINDOW - inset * 2}" height="${h}" rx="${h / 2}" fill="var(--sky-glow)" opacity="${o + (i % 2) * 0.06}"/>`;
     }).join("") +
     "</g>";
 
-  const STARS = `<g class="hero__stars" fill="#eef4ff">
-      <circle cx="42" cy="34" r="1.9"/><circle cx="96" cy="72" r="1.3"/>
-      <circle cx="150" cy="26" r="1.6"/><circle cx="212" cy="58" r="1.2"/>
-      <circle cx="262" cy="22" r="1.7"/><circle cx="118" cy="120" r="1.1"/>
-      <circle cx="30" cy="152" r="1.4"/><circle cx="196" cy="150" r="1.2"/>
-      <circle cx="352" cy="188" r="1.5"/><circle cx="268" cy="212" r="1.2"/>
-      <circle cx="70" cy="214" r="1.3"/><circle cx="330" cy="118" r="1.1"/>
-    </g>`;
+  const SKY_TEXTURE = {
+    clear: (night) => haze(50, 46, 44, night ? 0.12 : 0.26) + haze(50, 46, 26, night ? 0.1 : 0.2),
+    cloudy: (night) =>
+      `<ellipse cx="30" cy="24" rx="44" ry="16" fill="var(--sky-glow)" opacity="${night ? 0.1 : 0.2}"/>` +
+      `<ellipse cx="74" cy="76" rx="40" ry="15" fill="var(--sky-shade)" opacity="${night ? 0.16 : 0.1}"/>`,
+    rain: (night) => streaks(7, night ? 0.4 : 0.6),
+    snow: (night) => snowDots(11, night ? 0.5 : 0.75),
+    fog: (night) => fogBands(night ? 0.16 : 0.22),
+    thunder: (night) =>
+      `<path d="M58 22l-16 26h11l-6 30 21-34H56l8-22z" fill="var(--sky-glow)" opacity="${night ? 0.34 : 0.5}"/>`,
+  };
 
-  function skyMarkup(scene) {
+  function textureMarkup(scene) {
     const fam = scene.split("-")[0];
     const night = scene.endsWith("night");
-    const decor = (SKY_DECOR[fam] || SKY_DECOR.cloudy)(night);
-    return `<svg class="hero__sky" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true" focusable="false">${decor}${night ? STARS : ""}</svg>`;
+    const decor = (SKY_TEXTURE[fam] || SKY_TEXTURE.cloudy)(night);
+    const starfield = night ? stars(7, 0.8) : "";
+    return `<svg class="hero__texture" viewBox="0 0 ${WINDOW} ${WINDOW}" preserveAspectRatio="none" aria-hidden="true" focusable="false">${decor}${starfield}</svg>`;
   }
+
+  /* A weather mark's colour follows the surface it sits on, not the page theme:
+     a light sky takes a warm sun, a deep sky (night, or any card in the dark
+     theme) takes a bright one. */
+  const deepInk = (overDeep) => (overDeep ? " icon--deep" : "");
+  const themeIsDark = () => document.documentElement.dataset.theme === "dark";
 
   function renderWeather(data) {
     const city = state.city;
@@ -369,13 +371,15 @@
 
     el.current.innerHTML = `
       <div class="hero" data-scene="${scene}">
-        ${skyMarkup(scene)}
         <div class="hero__top">
           <div class="hero__place">
             <p class="hero__eyebrow">${isDay ? "Right now" : "Right now · night"}</p>
             <p class="location-name" data-testid="location-name">${esc(city.label)}</p>
           </div>
-          <div class="hero__icon">${Icons.weatherIcon(code, isDay, { size: 76 })}</div>
+          <div class="hero__icon${deepInk(themeIsDark() || scene.endsWith("night"))}">
+            ${textureMarkup(scene)}
+            ${Icons.weatherIcon(code, isDay, { size: 70 })}
+          </div>
         </div>
         <div class="hero__reading">
           <div class="temp-block">
@@ -405,21 +409,26 @@
   /* Data bars are inline SVG: CSS paint on a DOM element counts as a background
      candidate for any text sampled on top of it, so decoration belongs in the SVG
      layer where it cannot be mistaken for a text background. */
-  const sparkBar = (pct) => {
-    const h = Math.max(4, Math.round((pct / 100) * 26));
+  /* Temperature gets one colour language: the rail in a forecast row and the
+     two numbers beside it use the same bucket, so the rail reads as
+     "how warm this day runs" and not as decoration. */
+  const tempBucket = (c) =>
+    c <= 0 ? "cold" : c <= 10 ? "cool" : c <= 18 ? "mild" : c <= 26 ? "warm" : "hot";
+
+  /* The rail is the week's range: the track spans the coldest low to the warmest
+     high of all five days, and the filled segment is that day's own low -> high.
+     Ends are marked so the segment reads as a span, not a progress bar. */
+  const rangeBar = (leftPct, widthPct, bucket) => {
+    const w = Math.max(5, widthPct);
+    const x = Math.min(leftPct, 100 - w);
     return (
-      '<svg class="hour__bar" viewBox="0 0 6 26" aria-hidden="true" focusable="false">' +
-      '<rect width="6" height="26" rx="3" fill="var(--bar-track)"/>' +
-      `<rect x="0" y="${26 - h}" width="6" height="${h}" rx="3" fill="var(--bar-fill)"/>` +
+      `<svg class="day__range" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true" focusable="false">` +
+      '<rect width="100" height="6" rx="3" fill="var(--rail-track)"/>' +
+      `<rect class="rail-fill rail-fill--${bucket}" x="${x}" y="0" width="${w}" height="6" rx="3"/>` +
+      `<rect class="rail-cap" x="${x}" y="0" width="1.6" height="6" rx="0.8"/>` +
       "</svg>"
     );
   };
-
-  const rangeBar = (leftPct, widthPct) =>
-    '<svg class="day__range" viewBox="0 0 100 5" preserveAspectRatio="none" aria-hidden="true" focusable="false">' +
-    '<rect width="100" height="5" rx="2.5" fill="var(--bar-track)"/>' +
-    `<rect x="${leftPct}" y="0" width="${Math.max(4, widthPct)}" height="5" rx="2.5" fill="var(--range-fill)"/>` +
-    "</svg>";
 
   function renderHourly(data) {
     const hourly = data.hourly || {};
@@ -432,14 +441,6 @@
     if (start < 0) start = times.indexOf(`${currentIso.slice(0, 13)}:00`);
     if (start < 0) start = 0;
 
-    const temps = [];
-    for (let i = 0; i < 24; i++) {
-      if (times[start + i] !== undefined) temps.push(Number(hourly.temperature_2m[start + i]));
-    }
-    const tMin = temps.length ? Math.min(...temps) : 0;
-    const tMax = temps.length ? Math.max(...temps) : 1;
-    const span = Math.max(1, tMax - tMin);
-
     let markup = "";
     const firstDate = String(times[start] || "").slice(0, 10);
     let markedNextDay = false;
@@ -450,9 +451,7 @@
       const code = Number(hourly.weather_code[idx]);
       const isDay = Number(hourly.is_day[idx]) === 0 ? 0 : 1;
       const pop = Number(hourly.precipitation_probability[idx]);
-      const showPop = Number.isFinite(pop) && pop >= 20;
-      const tv = Number(hourly.temperature_2m[idx]);
-      const fill = 12 + Math.round(((tv - tMin) / span) * 88);
+      const showPop = Number.isFinite(pop) && pop >= 10;
       /* The slot above the time label is display-only: "Now" on the live hour,
          "Tomorrow" on the first hour that crosses into the next day. */
       let tag = "";
@@ -465,10 +464,9 @@
       markup += `<div class="hour${night}${i === 0 ? " hour--now" : ""}" data-testid="hour-item">
         <span class="hour__nowtag" aria-hidden="true">${tag}</span>
         <span class="hour-label" data-testid="hour-label">${esc(String(t).slice(11, 16))}</span>
-        <span class="hour__icon">${Icons.weatherIcon(code, isDay, { size: 27 })}</span>
+        <span class="hour__icon${deepInk(themeIsDark() || isDay === 0)}">${Icons.weatherIcon(code, isDay, { size: 27 })}</span>
         <span class="hour-temperature" data-testid="hour-temperature">${temp(Number(hourly.temperature_2m[idx]))}</span>
         <span class="hour__precip">${showPop ? Icons.uiIcon("droplet", { size: 10 }) + Math.round(pop) + "%" : ""}</span>
-        ${sparkBar(fill)}
       </div>`;
     }
     el.strip.innerHTML = markup;
@@ -514,21 +512,22 @@
       const pop = Number(daily.precipitation_probability_max[i]);
       const left = Math.round(((lows[i] - weekMin) / weekSpan) * 100);
       const width = Math.max(6, Math.round(((highs[i] - lows[i]) / weekSpan) * 100));
+      const bucket = tempBucket(highs[i]);
       markup += `<div class="day card" data-testid="forecast-day">
-        <div class="day__icon">${Icons.weatherIcon(code, 1, { size: 32 })}</div>
+        <div class="day__icon${deepInk(themeIsDark())}">${Icons.weatherIcon(code, 1, { size: 32 })}</div>
         <div class="day__main">
           <p class="day__heading">
             <span class="day-name" data-testid="day-name">${esc(dayName(times[i]))}</span>
             <span class="day-date">${esc(monthDay(times[i]))}</span>
           </p>
           <p class="day-condition" data-testid="day-condition">${esc(conditionText(code))}</p>
-          ${rangeBar(left, width)}
+          ${rangeBar(left, width, bucket)}
         </div>
         <div class="day__meta">
           <span class="day-precip" data-testid="day-precip">${
             Number.isFinite(pop) ? Math.round(pop) : 0
           }%</span>
-          <span class="day-temps">
+          <span class="day-temps day-temps--${bucket}">
             <span class="day-low" data-testid="day-low">${temp(Number(daily.temperature_2m_min[i]))}</span>
             <span class="day-high" data-testid="day-high">${temp(Number(daily.temperature_2m_max[i]))}</span>
           </span>
