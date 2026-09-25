@@ -87,6 +87,43 @@ const MEASURE = `(() => {
   });
   out.clippedText = clipped;
 
+  // overlapping text: two leaf text elements whose boxes collide and neither
+  // contains the other (this is how a crushed column shows up)
+  const leaves = [];
+  document.querySelectorAll('body *').forEach((el) => {
+    const hasText = Array.from(el.childNodes).some((n) => n.nodeType === 3 && n.textContent.trim());
+    if (!hasText) return;
+    const cs = getComputedStyle(el);
+    if (cs.visibility === 'hidden' || cs.display === 'none') return;
+    if (parseFloat(cs.opacity) < 0.05) return;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2 || r.height < 2) return;
+    let clipped = false;
+    let p = el.parentElement;
+    while (p) {
+      const ox = getComputedStyle(p).overflowX;
+      if (ox === 'auto' || ox === 'scroll') {
+        const pr = p.getBoundingClientRect();
+        if (r.right > pr.right + 1.5 || r.left < pr.left - 1.5) clipped = true;
+      }
+      p = p.parentElement;
+    }
+    if (clipped) return;
+    leaves.push({ el, r, txt: el.textContent.trim().slice(0, 22), cls: (typeof el.className === 'string' ? el.className : '').split(' ')[0] });
+  });
+  const overlaps = [];
+  for (let i = 0; i < leaves.length; i++) {
+    for (let j = i + 1; j < leaves.length; j++) {
+      const a = leaves[i], b = leaves[j];
+      if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+      if (a.el.parentElement === b.el.parentElement) continue; // siblings in a row are laid out side by side
+      const ox = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+      const oy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+      if (ox > 2 && oy > 2) overlaps.push((a.cls || a.txt) + ' x ' + (b.cls || b.txt) + ' (' + Math.round(ox) + 'x' + Math.round(oy) + 'px)');
+    }
+  }
+  out.overlaps = overlaps.slice(0, 6);
+
   // readable line measure for paragraph copy
   out.longLines = [...document.querySelectorAll('p')]
     .filter((p) => vis(p) && p.getBoundingClientRect().width > 620 && p.textContent.trim().length > 60)
@@ -129,6 +166,7 @@ async function run(browser, width, height, theme) {
       console.log('  gap scale', r.gapScale.join(' '));
       if (r.metricsEqualWidth === false) { console.log('  ISSUE metric widths differ'); issues++; }
       if (r.clippedText.length) { console.log('  ISSUE clipped', r.clippedText); issues++; }
+      if (r.overlaps && r.overlaps.length) { console.log('  ISSUE overlapping text', r.overlaps); issues++; }
       if (r.longLines.length) { console.log('  ISSUE long measure', r.longLines); issues++; }
       if (r.docScrollWidth > r.innerWidth) { console.log('  ISSUE overflow', r.docScrollWidth, '>', r.innerWidth); issues++; }
       if (r.heroTempPx !== undefined && r.heroTempPx < 64) { console.log('  ISSUE hero temperature below 64px'); issues++; }
