@@ -43,9 +43,9 @@ const MEASURE = `(() => {
   out.temp = r(temp);
   out.chips = r(chips);
   if (out.hero && temp) {
-    /* "empty space to the right of the temperature": the boxes are block-level
-       and span the card, so measure the ink — the widest text run in the temp
-       block (temperature, condition, feels-like line). */
+    /* "empty space to the right of the temperature": the reading row is the
+       band that must feel used, so measure how much of it no child box covers.
+       A row whose children tile it end to end has nothing left over. */
     const cs = getComputedStyle(hero);
     const padR = parseFloat(cs.paddingRight);
     const block = temp.closest('.temp-block') || temp;
@@ -60,6 +60,17 @@ const MEASURE = `(() => {
     }
     out.inkRightOfTemp = Math.round(inkRight);
     out.emptyRightOfTemp = Math.round(out.hero.x + out.hero.w - padR - inkRight);
+    const band = document.querySelector('.hero__reading') || block.parentElement;
+    const bb = band.getBoundingClientRect();
+    const covered = [];
+    for (const child of band.children) {
+      const r = child.getBoundingClientRect();
+      if (r.height < 2) continue;
+      covered.push([r.left - bb.left, r.right - bb.left]);
+    }
+    const rowRight = out.hero.x + out.hero.w - padR - bb.left;
+    const usedRight = covered.length ? Math.max(...covered.map((c) => c[1])) : 0;
+    out.uncoveredRightOfReading = Math.round(rowRight - usedRight);
   }
   if (out.strip) {
     const visible = Math.max(0, Math.min(vh, out.strip.bottom) - Math.max(0, out.strip.y));
@@ -95,7 +106,7 @@ const MEASURE = `(() => {
         rows.push({ vp: vp.tag, wide, theme, scene: scene.name, ...m });
         console.log(
           `${vp.tag.padEnd(9)} ${theme.padEnd(5)} ${scene.name.padEnd(11)}` +
-            ` hero ${String(m.hero && m.hero.h).padStart(4)}px  emptyRight ${String(m.emptyRightOfTemp).padStart(4)}px` +
+            ` hero ${String(m.hero && m.hero.h).padStart(4)}px  emptyRight ${String(m.emptyRightOfTemp).padStart(4)}px  uncovered ${String(m.uncoveredRightOfReading).padStart(4)}px` +
             `  strip ${String(m.strip && m.strip.h).padStart(4)}px @y${m.strip && m.strip.y} visible ${m.stripVisibleFrac}` +
             `  badge ${m.badge && m.badge.w}x${m.badge && m.badge.h}` +
             `  doc ${m.doc.h}`,
@@ -112,6 +123,8 @@ const MEASURE = `(() => {
     if (r.doc.w > (r.vp === '390x844' ? 390 : 1280)) problems.push(`${r.vp} ${r.theme} ${r.scene}: doc wider than viewport`);
     if (r.wide && r.stripVisibleFrac !== undefined && r.stripVisibleFrac < 0.99)
       problems.push(`${r.vp} ${r.theme} ${r.scene}: hour strip only ${(r.stripVisibleFrac * 100).toFixed(0)}% visible on first load`);
+    if (r.wide && r.uncoveredRightOfReading > 24)
+      problems.push(`${r.vp} ${r.theme} ${r.scene}: ${r.uncoveredRightOfReading}px of the hero's reading row is empty on the right`);
   }
   if (problems.length) {
     console.log('\nISSUES:');

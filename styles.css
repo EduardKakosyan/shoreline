@@ -607,13 +607,6 @@ html[data-theme="dark"] .theme-icon--moon {
   color: var(--text-muted);
 }
 
-.section__note {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-left: auto;
-}
-
 /* ==========================================================================
    Hero
    ========================================================================== */
@@ -1307,7 +1300,7 @@ html[data-theme="dark"] .panel--error .btn:hover {
    the page when they replace the skeleton (heights track the measured cards:
    hero 445px, hour card 165px, day row 82px at 390px wide). */
 .sk-hero {
-  height: 445px;
+  height: 427px;
   border-radius: 24px;
   padding: 24px 22px;
   display: flex;
@@ -1344,7 +1337,7 @@ html[data-theme="dark"] .panel--error .btn:hover {
 
 .sk-hour {
   width: 68px;
-  height: 170px;
+  height: 135px;
   flex: none;
 }
 
@@ -1353,7 +1346,7 @@ html[data-theme="dark"] .panel--error .btn:hover {
 }
 
 .sk-day {
-  height: 82px;
+  height: 83px;
 }
 
 /* ==========================================================================
@@ -1570,6 +1563,9 @@ html[data-theme="dark"] .empty-state {
   .hero {
     padding: 28px 30px 24px;
   }
+  .sk-hero {
+    height: 465px;
+  }
   .hero__icon {
     width: 96px;
     height: 96px;
@@ -1621,6 +1617,34 @@ html[data-theme="dark"] .empty-state {
   [data-testid="error"] {
     grid-area: hero;
   }
+  /* A page with one panel has nothing beside it, so that panel owns the whole
+     column pair instead of leaving a blank half; the skeleton keeps the hero's
+     shape because it is the shape the results will land in. The panel centres
+     its own measure so a wide card never becomes a long line of text. */
+  .empty-state, [data-testid="match-list"], [data-testid="notice"],
+  [data-testid="error"] {
+    grid-column: 1 / -1;
+  }
+  .empty-state__text {
+    max-width: 46rem;
+  }
+  .empty-state__art {
+    width: 158px;
+    height: 137px;
+  }
+  .panel, .match-list {
+    max-width: 46rem;
+    width: 100%;
+    margin-inline: auto;
+  }
+  .panel {
+    align-items: center;
+    padding: 24px 26px;
+  }
+  .match-option {
+    font-size: 1.0625rem;
+    padding: 14px 18px;
+  }
   [data-testid="current-weather"] {
     grid-area: hero;
   }
@@ -1639,6 +1663,9 @@ html[data-theme="dark"] .empty-state {
   .hero {
     padding: 24px 26px 24px;
     gap: 18px;
+  }
+  .sk-hero {
+    height: 335px;
   }
   /* A wide hero puts the metrics beside the reading instead of under it: the
      card's width carries the numbers, so there is no empty gutter next to the

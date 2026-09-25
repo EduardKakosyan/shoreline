@@ -53,3 +53,4 @@ suite can run locally — **never tune it to make it pass**. Run it with
 | `order-stress.js` | recents newest-first/dedup/cap-5 under out-of-order geocoder responses |
 | `live-check.js` | the **real** Open-Meteo API, no interception |
 | `geometry.js`, `polish.js` | element geometry/type scale; contrast headroom (not just pass/fail) |
+| `look.js` | **what a person sees on first load**: viewport-only screenshots at 390x844 and 1280x800 per scene x theme; fails if the hour strip is not fully visible on a laptop's first screen, or if the hero's reading row leaves >24px unused on the right |

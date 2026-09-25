@@ -64,7 +64,6 @@
     empty: document.querySelector('[data-testid="empty-state"]'),
     matchList: document.querySelector('[data-testid="match-list"]'),
     matchOptions: $("match-options"),
-    matchCount: $("match-count"),
     notice: document.querySelector('[data-testid="notice"]'),
     noticeText: $("notice-text"),
     error: document.querySelector('[data-testid="error"]'),
@@ -634,7 +633,6 @@
             <span class="match-option__go" aria-hidden="true">${Icons.uiIcon("chevron", { size: 18 })}</span></button>`,
       )
       .join("");
-    el.matchCount.textContent = `${matches.length} places`;
     el.matchList.hidden = false;
   }
 

@@ -27,6 +27,7 @@ run "keyboard audit" node audit/keyboard.js
 run "recents order stress" node audit/order-stress.js
 run "hourly strip invariants" node audit/hourly.js
 run "decoration never touches text" node audit/decor.js
+run "first-screen look (mobile + laptop)" node audit/look.js
 run "hero palette contrast" python3 tools/palette-check.py
 
 printf '\n'
