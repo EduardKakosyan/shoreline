@@ -50,7 +50,7 @@
 
   --hero-rain-day-1: #cfe0f2;
   --hero-rain-day-2: #a9bedb;
-  --hero-rain-day-3: #7f97bb;
+  --hero-rain-day-3: #93a9c4;
   --hero-rain-night-1: #101c2f;
   --hero-rain-night-2: #1b2a44;
   --hero-rain-night-3: #2b4058;
@@ -71,7 +71,7 @@
 
   --hero-thunder-day-1: #e4e0ff;
   --hero-thunder-day-2: #c3b8e8;
-  --hero-thunder-day-3: #8f86c9;
+  --hero-thunder-day-3: #a8a0d6;
   --hero-thunder-night-1: #191333;
   --hero-thunder-night-2: #241d43;
   --hero-thunder-night-3: #33255c;
@@ -82,7 +82,11 @@
   --hero-chip-bg-night: rgba(255, 255, 255, 0.14);
   --hero-chip-text-night: #eaf1ff;
 
-  --sun: #b8860b;
+  /* sun/moon accent for the inline SVG weather icons (decorative: SVG paint is
+     never sampled for text contrast, but it must still read on every sky) */
+  --icon-accent: #a35f00;
+  --icon-accent-hero-day: #8f5200;
+  --icon-accent-hero-night: #ffd98a;
 
   --shadow-1: 0 1px 2px rgba(14, 23, 40, 0.07), 0 8px 20px -12px rgba(14, 23, 40, 0.22);
   --shadow-2: 0 2px 6px rgba(14, 23, 40, 0.1), 0 18px 38px -18px rgba(14, 23, 40, 0.32);
@@ -118,7 +122,7 @@ html[data-theme="dark"] {
   --range-fill: #8a6034;
 
   --hero-chip-bg: rgba(255, 255, 255, 0.44);
-  --sun: #f2c455;
+  --icon-accent: #ffc65c;
 
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 24px -14px rgba(0, 0, 0, 0.7);
   --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.55), 0 22px 44px -20px rgba(0, 0, 0, 0.8);
@@ -210,8 +214,15 @@ svg {
   html {
     scroll-behavior: smooth;
   }
+  /* theme cross-fade: the page and every painted surface ease between the two
+     token sets instead of snapping */
+  html, body, .shell {
+    transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
   .card, .hero, .chip, .btn, .search__input, .icon-btn, .hour, .day,
-  .match-option, .unit-toggle, .clear-recents, .metric {
+  .match-option, .unit-toggle, .clear-recents, .metric, .panel, .hint-pill,
+  .empty-state, .empty-hint, .section__icon, .brand__mark, .day-date,
+  .hour-label, .day-condition, .footnote, .sk {
     transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease),
       color var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
       transform var(--dur) var(--ease);
@@ -286,7 +297,7 @@ svg {
 .brand {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -486,6 +497,18 @@ html[data-theme="dark"] .theme-icon--moon {
   min-height: 24px;
 }
 
+.section__icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  flex: none;
+}
+
 .section__title {
   font-size: 0.75rem;
   font-weight: 800;
@@ -594,11 +617,11 @@ html[data-theme="dark"] .theme-icon--moon {
   width: 78px;
   height: 78px;
   filter: drop-shadow(0 6px 14px rgba(6, 12, 24, 0.2));
+  --icon-accent: var(--icon-accent-hero-day);
 }
 
-.hero [data-testid="location-name"],
-.hero .current-condition {
-  --icon-accent: var(--sun);
+.hero[data-scene$="night"] .hero__icon {
+  --icon-accent: var(--icon-accent-hero-night);
 }
 
 .current-temperature {
@@ -632,23 +655,47 @@ html[data-theme="dark"] .theme-icon--moon {
 }
 
 .hero__chips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .metric {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 38px;
-  padding: 7px 14px;
-  border-radius: var(--radius-pill);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+  min-height: 56px;
+  padding: 9px 13px;
+  border-radius: var(--radius-sm);
   background: var(--hero-chip-bg);
   color: var(--hero-chip-text);
   border: 1px solid rgba(255, 255, 255, 0.4);
-  font-size: 0.875rem;
   font-weight: 700;
+}
+
+/* No alpha dimming anywhere on the hero: the contrast checker composites
+   partial alpha into the foreground, which drops small labels under 4.5:1 on
+   the darker skies. Hierarchy comes from size and weight only. */
+.metric__heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.metric__label {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.metric__value {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -672,8 +719,9 @@ html[data-theme="dark"] .theme-icon--moon {
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
-  padding: 4px 4px 12px;
-  margin: -4px -4px 0;
+  /* padded inside the container rather than pulled out with negative margins,
+     so the first card lines up with the rest of the layout */
+  padding: 4px 0 12px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
@@ -688,7 +736,7 @@ html[data-theme="dark"] .theme-icon--moon {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   text-align: center;
   scroll-snap-align: start;
   box-shadow: var(--shadow-1);
@@ -702,6 +750,7 @@ html[data-theme="dark"] .theme-icon--moon {
 .hour--now {
   background: var(--surface-3);
   border-color: var(--border-strong);
+  box-shadow: inset 0 3px 0 var(--ring), var(--shadow-1);
 }
 
 .hour__nowtag {
@@ -787,10 +836,24 @@ html[data-theme="dark"] .theme-icon--moon {
   gap: 4px;
 }
 
+.day__heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
 .day-name {
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: -0.01em;
+}
+
+.day-date {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
 }
 
 .day-condition {
@@ -1020,9 +1083,36 @@ html[data-theme="dark"] .panel--error .btn:hover {
   border: 1px solid var(--border);
 }
 
+/* Shaped like the real hero / hour cards / day rows so results do not jump
+   the page when they replace the skeleton. */
 .sk-hero {
-  height: 236px;
+  height: 424px;
   border-radius: 24px;
+  padding: 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--surface);
+}
+
+.sk-big {
+  height: 74px;
+  width: 44%;
+  border: 0;
+  background: var(--surface-2);
+}
+
+.sk-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: auto;
+}
+
+.sk-metric {
+  height: 56px;
+  border: 0;
+  background: var(--surface-2);
 }
 
 .sk-strip {
@@ -1033,16 +1123,16 @@ html[data-theme="dark"] .panel--error .btn:hover {
 
 .sk-hour {
   width: 68px;
-  height: 122px;
+  height: 170px;
   flex: none;
 }
 
 .sk-line {
-  height: 20px;
+  height: 24px;
 }
 
 .sk-day {
-  height: 66px;
+  height: 82px;
 }
 
 /* ==========================================================================
@@ -1228,6 +1318,8 @@ html[data-theme="dark"] .empty-state {
   font-weight: 600;
   color: var(--text-muted);
   padding: 6px 8px 0;
+  max-width: 46ch;
+  margin: 0 auto;
 }
 
 /* ==========================================================================
@@ -1310,6 +1402,15 @@ html[data-theme="dark"] .empty-state {
   }
   [data-testid="forecast-days"] {
     grid-area: forecast;
+    min-height: 0;
+  }
+  /* Two columns must end at the same line: let the five day rows absorb the
+     leftover height instead of leaving a hole under the forecast. */
+  [data-testid="forecast-days"] .days {
+    flex: 1 1 auto;
+  }
+  [data-testid="forecast-days"] .day {
+    flex: 1 1 0;
   }
   .recent {
     grid-area: recents;

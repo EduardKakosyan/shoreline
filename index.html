@@ -110,7 +110,17 @@
       <p class="visually-hidden" id="live-status" role="status" aria-live="polite"></p>
 
       <section class="skeleton" data-testid="loading" hidden aria-hidden="true">
-        <div class="sk sk-hero"></div>
+        <div class="sk sk-hero">
+          <div class="sk sk-line" style="width: 46%"></div>
+          <div class="sk sk-big"></div>
+          <div class="sk-metrics">
+            <div class="sk sk-metric"></div>
+            <div class="sk sk-metric"></div>
+            <div class="sk sk-metric"></div>
+            <div class="sk sk-metric"></div>
+          </div>
+        </div>
+        <div class="sk sk-line" style="width: 24%"></div>
         <div class="sk-strip">
           <div class="sk sk-hour"></div>
           <div class="sk sk-hour"></div>
@@ -118,7 +128,7 @@
           <div class="sk sk-hour"></div>
           <div class="sk sk-hour"></div>
         </div>
-        <div class="sk sk-line" style="width: 38%"></div>
+        <div class="sk sk-line" style="width: 24%"></div>
         <div class="sk sk-day"></div>
         <div class="sk sk-day"></div>
         <div class="sk sk-day"></div>
@@ -202,16 +212,18 @@
 
       <section class="section" data-testid="hourly" id="hourly-section" hidden>
         <div class="section__head">
+          <span class="section__icon" id="hourly-icon" aria-hidden="true"></span>
           <h2 class="section__title">Next 24 hours</h2>
           <span class="section__note">Scroll for more</span>
         </div>
         <div class="strip-wrap">
-          <div class="strip" id="hour-strip"></div>
+          <div class="strip" id="hour-strip" tabindex="0" role="group" aria-label="Hourly forecast, scrollable"></div>
         </div>
       </section>
 
       <section class="section" data-testid="forecast-days" id="forecast-section" hidden>
         <div class="section__head">
+          <span class="section__icon" id="forecast-icon" aria-hidden="true"></span>
           <h2 class="section__title">5-day forecast</h2>
           <span class="section__note" id="forecast-note"></span>
         </div>
@@ -220,6 +232,7 @@
 
       <section class="recent" data-testid="recents" aria-labelledby="recents-heading">
         <div class="recent__head">
+          <span class="section__icon" id="recents-icon" aria-hidden="true"></span>
           <h2 class="recent__title" id="recents-heading">Recent searches</h2>
           <button
             type="button"

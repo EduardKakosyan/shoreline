@@ -47,6 +47,10 @@ async function installStub(page, opts = {}) {
   const failingOnce = new Set(opts.failingOnce || []);
   const done = new Set();
   const delay = opts.delay || 0;
+  /* opts.city: { key, currentCode, isDay, dailyCodes } -> rewrite one fixture
+     city's weather so a caller can drive every WMO code through the real render
+     path instead of patching the DOM afterwards. */
+  const patch = opts.city || null;
 
   const lookup = (query) => {
     const keys = Object.keys(search);
@@ -79,7 +83,22 @@ async function installStub(page, opts = {}) {
       done.add(key);
       return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
     }
-    const city = CITIES[key];
+    const base = CITIES[key];
+    const city =
+      patch && patch.key === key
+        ? {
+            ...base,
+            current: {
+              ...base.current,
+              weather_code: patch.currentCode ?? base.current.weather_code,
+            },
+            daily: {
+              ...base.daily,
+              weather_code: patch.dailyCodes || base.daily.weather_code,
+            },
+          }
+        : base;
+    const isDayFlag = patch && patch.key === key ? patch.isDay ?? 1 : 1;
     const time = [], temperature_2m = [], weather_code = [], is_day = [], precipitation_probability = [];
     DATES.forEach((d, di) => {
       const min = city.daily.temperature_2m_min[di];
@@ -89,7 +108,7 @@ async function installStub(page, opts = {}) {
         time.push(`${d}T${String(h).padStart(2, '0')}:00`);
         temperature_2m.push(Math.round(min + (max - min) * WEIGHTS[h]));
         weather_code.push(di === 0 ? city.current.weather_code : city.daily.weather_code[di]);
-        is_day.push(h >= 7 && h <= 19 ? 1 : 0);
+        is_day.push(isDayFlag === 0 ? 0 : h >= 7 && h <= 19 ? 1 : 0);
         precipitation_probability.push(Math.round(pmax * (0.4 + 0.6 * WEIGHTS[h])));
       }
     });
@@ -98,7 +117,7 @@ async function installStub(page, opts = {}) {
       contentType: 'application/json',
       body: JSON.stringify({
         timezone: 'GMT',
-        current: { time: '2026-09-24T12:00', ...city.current, apparent_temperature: Math.round(city.current.temperature_2m) - 1, is_day: 1 },
+        current: { time: '2026-09-24T12:00', ...city.current, apparent_temperature: Math.round(city.current.temperature_2m) - 1, is_day: isDayFlag },
         hourly: { time, temperature_2m, weather_code, is_day, precipitation_probability },
         daily: {
           time: DATES,

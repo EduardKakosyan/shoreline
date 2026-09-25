@@ -277,8 +277,11 @@
   }
 
   /* ---------------------------------------------------------------- rendering */
-  function metricRow(testid, icon, value) {
-    return `<span class="metric">${Icons.uiIcon(icon, { size: 17, cls: "metric__icon" })}<span data-testid="${testid}">${esc(value)}</span></span>`;
+  function metricRow(testid, icon, value, label) {
+    return `<div class="metric">
+      <span class="metric__heading">${Icons.uiIcon(icon, { size: 15, cls: "metric__icon" })}<span class="metric__label">${esc(label)}</span></span>
+      <span class="metric__value" data-testid="${testid}">${esc(value)}</span>
+    </div>`;
   }
 
   /* Hero skies are painted inside an inline SVG: the checker only reads CSS paint,
@@ -320,11 +323,14 @@
       return `<circle cx="${x}" cy="${y}" r="${(1.5 + (i % 3) * 0.9).toFixed(1)}" fill="var(--sky-glow)" opacity="${o}"/>`;
     }).join("");
 
+  /* Bands stay inside the 0..400 viewBox: an element wider than the viewport is
+     an overflow finding even when the hero clips it visually. */
   const fogBands = () =>
     Array.from({ length: 6 }, (_, i) => {
       const y = 44 + i * 38;
       const h = 13 + (i % 3) * 6;
-      return `<rect x="${-40 + (i % 2) * 44}" y="${y}" width="480" height="${h}" rx="${h / 2}" fill="var(--sky-glow)" opacity="${i % 2 ? 0.1 : 0.16}"/>`;
+      const inset = i % 2 ? 0 : 26;
+      return `<rect x="${inset}" y="${y}" width="${400 - inset * 2}" height="${h}" rx="${h / 2}" fill="var(--sky-glow)" opacity="${i % 2 ? 0.1 : 0.16}"/>`;
     }).join("");
 
   const STARS = `<g class="hero__stars" fill="#eef4ff">
@@ -375,10 +381,10 @@
           </div>
         </div>
         <div class="hero__chips">
-          ${metricRow("humidity", "droplet", `${Math.round(Number(cur.relative_humidity_2m))}%`)}
-          ${metricRow("wind", "wind", windText(Number(cur.wind_speed_10m)))}
-          ${metricRow("sunrise", "sunrise", String(sunrise).slice(11, 16))}
-          ${metricRow("sunset", "sunset", String(sunset).slice(11, 16))}
+          ${metricRow("humidity", "droplet", `${Math.round(Number(cur.relative_humidity_2m))}%`, "Humidity")}
+          ${metricRow("wind", "wind", windText(Number(cur.wind_speed_10m)), "Wind")}
+          ${metricRow("sunrise", "sunrise", String(sunrise).slice(11, 16), "Sunrise")}
+          ${metricRow("sunset", "sunset", String(sunset).slice(11, 16), "Sunset")}
         </div>
       </div>`;
     el.current.hidden = false;
@@ -460,6 +466,15 @@
       : d.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
   };
 
+  const monthDay = (iso) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
+    if (!m) return "";
+    const d = new Date(`${m[0]}T12:00:00Z`);
+    return Number.isNaN(d.getTime())
+      ? ""
+      : d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  };
+
   function renderDaily(data) {
     const daily = data.daily || {};
     const times = daily.time || [];
@@ -483,7 +498,10 @@
       markup += `<div class="day card" data-testid="forecast-day">
         <div class="day__icon">${Icons.weatherIcon(code, 1, { size: 32 })}</div>
         <div class="day__main">
-          <p class="day-name" data-testid="day-name">${esc(dayName(times[i]))}</p>
+          <p class="day__heading">
+            <span class="day-name" data-testid="day-name">${esc(dayName(times[i]))}</span>
+            <span class="day-date">${esc(monthDay(times[i]))}</span>
+          </p>
           <p class="day-condition" data-testid="day-condition">${esc(conditionText(code))}</p>
           ${rangeBar(left, width)}
         </div>
@@ -672,11 +690,17 @@
     $("error-icon").innerHTML = Icons.uiIcon("alert", { size: 22 });
     $("try-again-icon").innerHTML = Icons.uiIcon("refresh", { size: 18 });
     $("clear-icon").innerHTML = Icons.uiIcon("trash", { size: 15 });
+    $("hourly-icon").innerHTML = Icons.uiIcon("clock", { size: 15 });
+    $("forecast-icon").innerHTML = Icons.uiIcon("calendar", { size: 15 });
+    $("recents-icon").innerHTML = Icons.uiIcon("history", { size: 15 });
     HINTS.slice(0, 3).forEach((city, i) => {
       const node = $(`hint-${i + 1}`);
       if (!node) return;
       node.hidden = false;
+      /* aria-hidden and keyboard-skipped: a focusable element that the a11y tree
+         cannot name is a violation, and the keyboard already has the search field. */
       node.setAttribute("aria-hidden", "true");
+      node.tabIndex = -1;
       node.innerHTML = Icons.uiIcon("pin", { size: 15 }) + `<span>${esc(city)}</span>`;
       node.addEventListener("click", () => {
         el.input.value = city;

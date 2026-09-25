@@ -106,6 +106,8 @@
     globe: `<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.6 12h16.8M12 3.4c2.4 2.6 3.5 5.5 3.5 8.6s-1.1 6-3.5 8.6c-2.4-2.6-3.5-5.5-3.5-8.6s1.1-6 3.5-8.6z" fill="none" stroke="currentColor" stroke-width="1.5"/>`,
     star: `<path d="M12 3.8l2.4 5 5.5.8-4 3.9 1 5.5-4.9-2.6-4.9 2.6 1-5.5-4-3.9 5.5-.8 2.4-5z" fill="currentColor"/>`,
     clock: `<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.2V12l3.4 2.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>`,
+    calendar: `<rect x="3.6" y="5.2" width="16.8" height="15.2" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.6 9.6h16.8M8.2 3.4v3.2M15.8 3.4v3.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7.8 13.4h2.2M13.4 13.4h2.8M7.8 17h2.2M13.4 17h2.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>`,
+    history: `<path d="M4.2 12a7.8 7.8 0 1 0 2.5-5.7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 3.8v3.6h3.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7.8V12l3 1.9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>`,
     chevron: `<path d="M9.4 5.6 15.8 12l-6.4 6.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
     empty: `<circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.35"/>`,
   };

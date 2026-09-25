@@ -43,7 +43,7 @@ function auditPage(opts) {
       const c = parse(cs.backgroundColor);
       const stops = stopsOf(cs.backgroundImage);
       if (cs.backgroundImage && cs.backgroundImage.includes('url(')) bitmap = true;
-      if (c && c[3] >= 0.99) { base = [c[0], c[1], c[2]]; candidates = stops.length ? stops.map((s) => over(s, base)) : null; }
+      if (c && c[3] >= 0.99) { base = [c[0], c[1], c[2]]; candidates = stops.length ? stops.map((s) => over([s[0], s[1], s[2], 1], base)) : null; }
       else { if (c && c[3] > 0) base = over(c, base); if (stops.length) candidates = stops.map((s) => over(s, base)); }
     }
     const list = candidates && candidates.length ? candidates : [base];

@@ -11,6 +11,15 @@ const SCENES = [
   'clear-day', 'clear-night', 'cloudy-day', 'cloudy-night', 'rain-day', 'rain-night',
   'snow-day', 'snow-night', 'fog-day', 'fog-night', 'thunder-day', 'thunder-night',
 ];
+/* representative WMO code per hero palette, used to drive the real render path */
+const SCENE_CODE = {
+  'clear-day': 0, 'clear-night': 0,
+  'cloudy-day': 3, 'cloudy-night': 3,
+  'rain-day': 63, 'rain-night': 63,
+  'snow-day': 73, 'snow-night': 73,
+  'fog-day': 45, 'fog-night': 45,
+  'thunder-day': 95, 'thunder-night': 95,
+};
 
 const SEARCH = {
   london: ['london_gb', 'london_ca', 'london_oh', 'london_ky', 'london_ar'],
@@ -74,17 +83,21 @@ function judge(label, res) {
       await context.close();
     }
 
-    /* every hero palette */
+    /* every hero palette, driven through real fixture weather (current.weather_code
+       + is_day) so the render path is measured, not a DOM override */
     for (const scene of SCENES) {
       const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
       const page = await context.newPage();
-      await install(page);
+      await install(page, { city: { key: 'paris', currentCode: SCENE_CODE[scene], isDay: scene.endsWith('night') ? 0 : 1 } });
       await page.goto(BASE + '/');
       await setTheme(page, theme);
       await typeCity(page, 'Paris');
       await page.getByTestId('current-weather').waitFor();
-      await page.evaluate(`document.querySelector('.hero').dataset.scene = ${JSON.stringify(scene)}`);
-      await page.waitForTimeout(60);
+      const actual = await page.evaluate(() => document.querySelector('.hero').dataset.scene);
+      if (actual !== scene) {
+        failures++;
+        report.push(`FAIL  ${theme}/hero=${scene} rendered as ${actual}`);
+      }
       const res = await page.evaluate(`${AUDIT}\n;auditPage(${JSON.stringify(OPTS)})`);
       judge(`${theme}/results/hero=${scene}`, res);
       await context.close();
@@ -173,7 +186,8 @@ function judge(label, res) {
   console.log(failures === 0 ? '\nAUDIT CLEAN' : `\nAUDIT: ${failures} failing scenario(s)`);
   process.exit(failures === 0 ? 0 : 1);
 
-  async function install(page) {
+  async function install(page, opts = {}) {
+    const patch = opts.city || null;
     const geoHost = 'geocoding-api.open-meteo.com';
     const wxHost = 'api.open-meteo.com';
     const CITIES = cityTable();
@@ -204,18 +218,22 @@ function judge(label, res) {
       const key = keyFor(lat, lon);
       if (!key) return route.fulfill({ status: 400, contentType: 'application/json', body: '{}' });
       const city = CITIES[key];
+      const isPatched = patch && patch.key === key;
+      const effCode = isPatched && patch.currentCode != null ? patch.currentCode : city.current.weather_code;
+      const isDayFlag = isPatched && patch.isDay != null ? patch.isDay : 1;
+      const effDaily = isPatched && patch.dailyCodes ? patch.dailyCodes : city.daily.weather_code;
       const dates = ['2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28'];
       const W = [0.10, 0.06, 0.03, 0.01, 0.00, 0.02, 0.08, 0.18, 0.32, 0.47, 0.62, 0.77, 0.88, 0.96, 1.00, 0.97, 0.88, 0.74, 0.59, 0.45, 0.33, 0.24, 0.17, 0.13];
       const PRE = { 0: 0, 1: 5, 2: 10, 3: 20, 45: 30, 48: 35, 51: 45, 53: 55, 55: 65, 56: 60, 57: 70, 61: 60, 63: 70, 65: 80, 66: 70, 67: 85, 71: 60, 73: 70, 75: 80, 77: 60, 80: 55, 81: 65, 82: 85, 85: 70, 86: 80, 95: 85, 96: 90, 99: 95 };
       const time = [], temperature_2m = [], weather_code = [], is_day = [], precipitation_probability = [];
       dates.forEach((d, di) => {
         const min = city.daily.temperature_2m_min[di], max = city.daily.temperature_2m_max[di];
-        const pmax = PRE[city.daily.weather_code[di]] ?? 0;
+        const pmax = PRE[effDaily[di]] ?? 0;
         for (let h = 0; h < 24; h++) {
           time.push(`${d}T${String(h).padStart(2, '0')}:00`);
           temperature_2m.push(Math.round(min + (max - min) * W[h]));
-          weather_code.push(di === 0 ? city.current.weather_code : city.daily.weather_code[di]);
-          is_day.push(h >= 7 && h <= 19 ? 1 : 0);
+          weather_code.push(di === 0 ? effCode : effDaily[di]);
+          is_day.push(isDayFlag === 0 ? 0 : h >= 7 && h <= 19 ? 1 : 0);
           precipitation_probability.push(Math.round(pmax * (0.4 + 0.6 * W[h])));
         }
       });
@@ -223,12 +241,12 @@ function judge(label, res) {
         status: 200, contentType: 'application/json',
         body: JSON.stringify({
           timezone: 'GMT',
-          current: { time: '2026-09-24T12:00', ...city.current, apparent_temperature: Math.round(city.current.temperature_2m) - 1, is_day: 1 },
+          current: { time: '2026-09-24T12:00', ...city.current, weather_code: effCode, apparent_temperature: Math.round(city.current.temperature_2m) - 1, is_day: isDayFlag },
           hourly: { time, temperature_2m, weather_code, is_day, precipitation_probability },
           daily: {
-            time: dates, weather_code: city.daily.weather_code,
+            time: dates, weather_code: effDaily,
             temperature_2m_max: city.daily.temperature_2m_max, temperature_2m_min: city.daily.temperature_2m_min,
-            precipitation_probability_max: city.daily.weather_code.map((c) => PRE[c] ?? 0),
+            precipitation_probability_max: effDaily.map((c) => PRE[c] ?? 0),
             sunrise: dates.map((d) => `${d}T07:12`), sunset: dates.map((d) => `${d}T19:26`),
           },
         }),

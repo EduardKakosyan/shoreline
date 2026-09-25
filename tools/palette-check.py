@@ -1,45 +1,83 @@
+"""Worst-case contrast of hero text colours against the hero gradient stops.
+
+Reads token values straight out of styles.css so the table can never drift from
+what the app renders. The acceptance checker treats every CSS gradient colour
+stop as a contrast candidate and keeps the worst one, so a palette is only safe
+when its worst stop still clears 4.5:1 for small text and 3:1 for large hero
+text. This tool aims higher (6.0) so the design keeps visual room to breathe.
+
+Usage: python3 tools/palette-check.py
+"""
+
+import os
+import re
 import sys
+
+CSS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "styles.css")
+FAMILIES = ["clear", "cloudy", "rain", "snow", "fog", "thunder"]
+TARGET = 6.0
+
+DAY_TEXT, DAY_MUTED, DAY_CHIP = "#0e1728", "#17283f", "#16233a"
+NIGHT_TEXT, NIGHT_MUTED, NIGHT_CHIP = "#f0f5ff", "#c3d3ec", "#eaf1ff"
+
 
 def lin(c):
     c = c / 255
     return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
 
-def lum(rgb):
-    return 0.2126 * lin(rgb[0]) + 0.7152 * lin(rgb[1]) + 0.0722 * lin(rgb[2])
 
-def hx(h):
-    h = h.lstrip('#')
-    return [int(h[i:i + 2], 16) for i in (0, 2, 4)]
+def lum(h):
+    r, g, b = (int(h[i : i + 2], 16) for i in (1, 3, 5))
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
 
-def ratio(f, b):
-    a, bb = lum(hx(f)), lum(hx(b))
-    return (max(a, bb) + 0.05) / (min(a, bb) + 0.05)
 
-def L(h):
-    return lum(hx(h))
+def cr(a, b):
+    A, B = lum(a), lum(b)
+    return (max(A, B) + 0.05) / (min(A, B) + 0.05)
 
-def mix(a, b, t):
-    ca, cb = hx(a), hx(b)
-    return '#' + ''.join(f'{round(ca[i] + (cb[i] - ca[i]) * t):02x}' for i in range(3))
 
-tests = {
-    'light-page-text': ('#121828', ['#f4f7fc', '#e7ecf5', '#ffffff']),
-    'light-muted':     ('#4c5a72', ['#f4f7fc', '#e7ecf5', '#ffffff']),
-    'dark-page-text':  ('#e9eefb', ['#0c1322', '#070b14', '#141d31']),
-    'dark-muted':      ('#9fb0c9', ['#0c1322', '#070b14', '#141d31']),
-    'dark-soft':       ('#c3d0e6', ['#0c1322', '#141d31']),
-    'white-on-blue':   ('#ffffff', ['#2f6fed', '#1f5fd6', '#1e4fbf', '#1b3f99']),
-    'day-hero-darktext': ('#101a2b', ['#9ed4ff', '#ffe3ad', '#cfe9ff', '#a9bedb', '#7f97bb',
-                                      '#cfd8e6', '#aebdd2', '#dbe7f5', '#b9cfe8', '#dfe5ec',
-                                      '#c3ccd8', '#b7aede', '#8f86c9']),
-    'night-hero-lighttext': ('#f0f5ff', ['#0b1533', '#1c2b57', '#1a2137', '#2b3450', '#101c2f',
-                                         '#24354f', '#16233a', '#2d3f5c', '#1b2130', '#2a3143',
-                                         '#191333', '#33255c']),
-}
+def tokens():
+    text = open(CSS, encoding="utf-8").read()
+    return dict(re.findall(r"(--[\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8})\s*;", text))
 
-for k, (fg, bgs) in tests.items():
-    print(f"{k:24s} fg={fg} " + "  ".join(f"{bg}:{ratio(fg, bg):.2f}" for bg in bgs))
 
-print()
-print('lums:', {h: round(L(h), 3) for h in ['#9ed4ff', '#ffe3ad', '#a9bedb', '#7f97bb', '#cfd8e6',
-                                            '#aebdd2', '#b7aede', '#8f86c9', '#2b3450', '#33255c', '#2f6fed']})
+def main():
+    tk = tokens()
+    worst_all = 99.0
+    bad = []
+    print(f"{'scene':16} {'text':>6} {'muted':>6} {'chip':>6}  note")
+    for fam in FAMILIES:
+        for part in ("day", "night"):
+            scene = f"{fam}-{part}"
+            keys = [f"--hero-{fam}-{part}-{i}" for i in (1, 2, 3)]
+            stops = [tk.get(k) for k in keys]
+            missing = [k for k, v in zip(keys, stops) if v is None]
+            if missing:
+                print(f"{scene:16}  MISSING {', '.join(missing)}")
+                bad.append(scene)
+                worst_all = 0.0
+                continue
+            night = part == "night"
+            t, m, c = (
+                (NIGHT_TEXT, NIGHT_MUTED, NIGHT_CHIP) if night else (DAY_TEXT, DAY_MUTED, DAY_CHIP)
+            )
+            rt = min(cr(t, s) for s in stops)
+            rm = min(cr(m, s) for s in stops)
+            rc = min(cr(c, s) for s in stops)
+            worst = min(rt, rm, rc)
+            worst_all = min(worst_all, worst)
+            if worst < TARGET:
+                bad.append(scene)
+            print(
+                f"{scene:16} {rt:6.2f} {rm:6.2f} {rc:6.2f}"
+                + ("" if worst >= TARGET else f"   <-- below {TARGET}")
+            )
+    print(f"\nworst hero contrast: {worst_all:.2f}  (target {TARGET})")
+    if bad:
+        print("BELOW TARGET / MISSING:", ", ".join(bad))
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
