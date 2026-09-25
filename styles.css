@@ -82,6 +82,14 @@
   --hero-chip-bg-night: rgba(255, 255, 255, 0.14);
   --hero-chip-text-night: #eaf1ff;
 
+  /* night hours in the hourly strip: a deliberately dark chip on a light page,
+     measured against its own opaque background */
+  --night-card: #1e2b47;
+  --night-card-hover: #26344f;
+  --night-card-border: #2f3f5e;
+  --night-card-text: #eaf1ff;
+  --night-card-muted: #bccae3;
+
   /* sun/moon accent for the inline SVG weather icons (decorative: SVG paint is
      never sampled for text contrast, but it must still read on every sky) */
   --icon-accent: #a35f00;
@@ -123,6 +131,13 @@ html[data-theme="dark"] {
 
   --hero-chip-bg: rgba(255, 255, 255, 0.44);
   --icon-accent: #ffc65c;
+
+  /* night hours go deeper than the dark surface rather than inverting */
+  --night-card: #070d18;
+  --night-card-hover: #0c1424;
+  --night-card-border: #223050;
+  --night-card-text: #eaf1ff;
+  --night-card-muted: #b3c2dc;
 
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 24px -14px rgba(0, 0, 0, 0.7);
   --shadow-2: 0 2px 8px rgba(0, 0, 0, 0.55), 0 22px 44px -20px rgba(0, 0, 0, 0.8);
@@ -771,6 +786,30 @@ html[data-theme="dark"] .theme-icon--moon {
 .hour:hover {
   border-color: var(--border-strong);
   background: var(--surface-2);
+}
+
+/* Night hours read as night: a deeper card, cooler ink. The .hour prefix keeps
+   these above .hour--now and .hour:hover regardless of source order, otherwise
+   a night "Now" card gets light paint under night-coloured text. */
+.hour.hour--night {
+  background: var(--night-card);
+  border-color: var(--night-card-border);
+  color: var(--night-card-text);
+}
+
+.hour.hour--night .hour-label,
+.hour.hour--night .hour__nowtag,
+.hour.hour--night .hour__precip {
+  color: var(--night-card-muted);
+}
+
+.hour.hour--night .hour-temperature {
+  color: var(--night-card-text);
+}
+
+.hour.hour--night:hover {
+  background: var(--night-card-hover);
+  border-color: var(--border-strong);
 }
 
 .hour--now {

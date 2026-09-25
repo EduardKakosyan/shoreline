@@ -461,7 +461,8 @@
         tag = "Tomorrow";
         markedNextDay = true;
       }
-      markup += `<div class="hour${i === 0 ? " hour--now" : ""}" data-testid="hour-item">
+      const night = isDay === 0 ? " hour--night" : "";
+      markup += `<div class="hour${night}${i === 0 ? " hour--now" : ""}" data-testid="hour-item">
         <span class="hour__nowtag" aria-hidden="true">${tag}</span>
         <span class="hour-label" data-testid="hour-label">${esc(String(t).slice(11, 16))}</span>
         <span class="hour__icon">${Icons.weatherIcon(code, isDay, { size: 27 })}</span>
