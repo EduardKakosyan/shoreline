@@ -82,13 +82,14 @@
   --hero-chip-bg-night: rgba(255, 255, 255, 0.14);
   --hero-chip-text-night: #eaf1ff;
 
-  /* night hours in the hourly strip: a deliberately dark chip on a light page,
-     measured against its own opaque background */
-  --night-card: #1e2b47;
-  --night-card-hover: #26344f;
-  --night-card-border: #2f3f5e;
-  --night-card-text: #eaf1ff;
-  --night-card-muted: #bccae3;
+  /* Night hours in the hourly strip are a quiet cue, not a selection: in the
+     light theme that is a cool tint on the same ink, so the card that stands
+     out is the current hour, not everything after 19:00. */
+  --night-card: #e3eaf6;
+  --night-card-hover: #d9e2f2;
+  --night-card-border: #c4d0e5;
+  --night-card-text: #121828;
+  --night-card-muted: #45536b;
 
   /* Sun / moon / bolt for the inline SVG weather icons. Decorative: SVG paint is
      never sampled for text contrast, so these chase recognition, not ratios —
@@ -179,9 +180,10 @@ html[data-theme="dark"] {
   --temp-hot: #ff9ea3;
   --rail-track: #33415c;
 
-  /* night hours go deeper than the dark surface rather than inverting */
-  --night-card: #070d18;
-  --night-card-hover: #0c1424;
+  /* in the dark theme the night cue is a subtle depth step, one small lift
+     below the card surface - not a hole punched in the page */
+  --night-card: #0d1524;
+  --night-card-hover: #131d30;
   --night-card-border: #223050;
   --night-card-text: #eaf1ff;
   --night-card-muted: #b3c2dc;
@@ -637,19 +639,21 @@ html[data-theme="dark"] .theme-icon--moon {
   border-color: rgba(0, 0, 0, 0.45);
 }
 
-/* The dark theme never shows a lit screen: daytime skies here are the same
-   conditions read at dusk, so the hero keeps its meaning without glaring out of
-   a near-black page. Light ink, because these skies are deep. */
+/* The dark theme never shows a lit screen, but daytime here must still read as
+   daytime: the same skies as the light theme, dimmed to a screen at night with
+   the sun still up. Clear days carry a real warmth in the lower sky; cloud, rain
+   and snow stay cool; fog and thunder stay neutral. Light ink, because even the
+   warm skies are deep enough to need it. */
 html[data-theme="dark"] .hero[data-scene$="day"] {
   color: var(--hero-text-night);
   border-color: rgba(0, 0, 0, 0.45);
 }
-html[data-theme="dark"] .hero[data-scene="clear-day"]   { --hero-1: #131f36; --hero-2: #1c2e4d; --hero-3: #33241b; --hero-solid: #1c2e4d; }
-html[data-theme="dark"] .hero[data-scene="cloudy-day"]  { --hero-1: #20272f; --hero-2: #2b333d; --hero-3: #3a4552; --hero-solid: #2b333d; }
-html[data-theme="dark"] .hero[data-scene="rain-day"]    { --hero-1: #0d1a29; --hero-2: #142a38; --hero-3: #20404e; --hero-solid: #142a38; }
-html[data-theme="dark"] .hero[data-scene="snow-day"]    { --hero-1: #182531; --hero-2: #223944; --hero-3: #2c4c57; --hero-solid: #223944; }
-html[data-theme="dark"] .hero[data-scene="fog-day"]     { --hero-1: #1f1f24; --hero-2: #2a2b33; --hero-3: #3a3842; --hero-solid: #2a2b33; }
-html[data-theme="dark"] .hero[data-scene="thunder-day"] { --hero-1: #181330; --hero-2: #241d42; --hero-3: #33255a; --hero-solid: #241d42; }
+html[data-theme="dark"] .hero[data-scene="clear-day"]   { --hero-1: #142137; --hero-2: #243250; --hero-3: #663d11; --hero-solid: #243250; }
+html[data-theme="dark"] .hero[data-scene="cloudy-day"]  { --hero-1: #1d2735; --hero-2: #293447; --hero-3: #374558; --hero-solid: #293447; }
+html[data-theme="dark"] .hero[data-scene="rain-day"]    { --hero-1: #0e1d2e; --hero-2: #172c42; --hero-3: #26495a; --hero-solid: #172c42; }
+html[data-theme="dark"] .hero[data-scene="snow-day"]    { --hero-1: #141f2a; --hero-2: #1f323d; --hero-3: #2b4859; --hero-solid: #1f323d; }
+html[data-theme="dark"] .hero[data-scene="fog-day"]     { --hero-1: #1e222a; --hero-2: #2a2f39; --hero-3: #41485a; --hero-solid: #2a2f39; }
+html[data-theme="dark"] .hero[data-scene="thunder-day"] { --hero-1: #17122f; --hero-2: #251e45; --hero-3: #3d2b6e; --hero-solid: #251e45; }
 html[data-theme="dark"] .hero[data-scene$="day"] .hero__eyebrow,
 html[data-theme="dark"] .hero[data-scene$="day"] .feels-line {
   color: var(--hero-muted-night);
@@ -738,9 +742,12 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
   border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
-  background: rgba(3, 9, 20, 0.16);
-  border: 1px solid rgba(255, 255, 255, 0.34);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 6px 16px -8px rgba(6, 12, 24, 0.4);
+  /* No fill and no hairline of its own: a translucent tile over the hero sky
+     sits measurably darker than the sky around it, capped by a light hairline —
+     a bright line over a dark band that reads as a rendering glitch on the top
+     edge. The window is defined by its clipped sky texture alone. */
+  background: none;
+  border: 0;
   --icon-accent: var(--icon-accent-hero-day);
   --sun-core: var(--sun-core-hero-day);
   --sun-ray: var(--sun-ray-hero-day);
@@ -795,6 +802,12 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+/* .hero__reading is a plain column on a phone; the desktop rules put the
+   reading and the metrics side by side so the wide card has no empty gutter. */
+.hero__reading > .temp-block {
+  min-width: 0;
 }
 
 .metric {
@@ -884,9 +897,8 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
   background: var(--surface-2);
 }
 
-/* Night hours read as night: a deeper card, cooler ink. The .hour prefix keeps
-   these above .hour--now and .hour:hover regardless of source order, otherwise
-   a night "Now" card gets light paint under night-coloured text. */
+/* Night hours are the quiet cue in the strip: a cool tint, the moon icon, the
+   same ink. The card that stands out is the current hour, whatever the sky. */
 .hour.hour--night {
   background: var(--night-card);
   border-color: var(--night-card-border);
@@ -908,10 +920,25 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
   border-color: var(--border-strong);
 }
 
+/* "Now" is the loudest card in the strip in both themes: filled surface, a
+   top band, and the only accented text in the row. */
 .hour--now {
   background: var(--surface-3);
-  border-color: var(--border-strong);
-  box-shadow: inset 0 3px 0 var(--ring), var(--shadow-1);
+  border-color: var(--accent);
+  box-shadow: inset 0 4px 0 var(--ring), var(--shadow-1);
+}
+
+.hour.hour--now .hour__nowtag {
+  color: var(--accent-strong);
+}
+
+html[data-theme="dark"] .hour.hour--now .hour__nowtag {
+  color: var(--accent);
+}
+
+.hour--now.hour--night {
+  background: var(--night-card-hover);
+  border-color: var(--accent);
 }
 
 .hour__nowtag {
@@ -1563,22 +1590,22 @@ html[data-theme="dark"] .empty-state {
 }
 
 @media (min-width: 940px) {
-  /* A laptop should see now, the next hours and the week together: the hero and
-     the week sit side by side at their natural heights (nothing stretches to
-     fill a column), and the hours run full width beneath them. */
+  /* A laptop should see now, the next hours and the week together on first
+     load. The hero and the hours share the left column at their natural
+     heights, the week spans the right, and nothing stretches to fill. */
   .shell {
     max-width: 72rem;
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
     grid-template-areas:
       "header  header"
       "search  search"
       "hero    week"
-      "hours   hours"
+      "hours   week"
       "recents recents"
       "foot    foot";
     column-gap: 22px;
-    row-gap: 18px;
+    row-gap: 16px;
     align-items: start;
     padding: 0 28px 44px;
   }
@@ -1610,18 +1637,27 @@ html[data-theme="dark"] .empty-state {
     grid-area: foot;
   }
   .hero {
-    padding: 24px 26px 22px;
-    gap: 16px;
+    padding: 24px 26px 24px;
+    gap: 18px;
   }
-  .hero__icon {
-    width: 92px;
-    height: 92px;
+  /* A wide hero puts the metrics beside the reading instead of under it: the
+     card's width carries the numbers, so there is no empty gutter next to the
+     temperature. */
+  .hero__reading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: end;
+    gap: 24px;
   }
   .hero__chips {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hero__icon {
+    width: 96px;
+    height: 96px;
   }
   .current-temperature {
-    font-size: 6.5rem;
+    font-size: clamp(5rem, 8.4vw, 6.75rem);
   }
   .location-name {
     font-size: 1.5rem;

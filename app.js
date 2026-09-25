@@ -75,7 +75,6 @@
     strip: $("hour-strip"),
     forecastSection: $("forecast-section"),
     dayList: $("day-list"),
-    forecastNote: $("forecast-note"),
     chips: $("recent-chips"),
     clearRecents: $("clear-recents"),
     recentHint: $("recent-hint"),
@@ -359,6 +358,21 @@
   const deepInk = (overDeep) => (overDeep ? " icon--deep" : "");
   const themeIsDark = () => document.documentElement.dataset.theme === "dark";
 
+  /* The hero's icon tile is a window into the sky: the condition's texture is
+     clipped inside it and nowhere else on the card, so decoration can never
+     drift over the words. It carries no paint of its own — a translucent tile
+     over the hero sky reads as a dark sliver under the tile's top edge. */
+  function heroIcon(code, isDay, scene) {
+    const night = scene.endsWith("night");
+    /* In the dark theme every sky reads deeper, so the mark there always takes
+       the bright set; in the light theme only a night sky does. */
+    const deep = themeIsDark() || night;
+    return `<span class="hero__icon${deep ? " icon--deep" : ""}">
+      ${textureMarkup(scene)}
+      ${Icons.weatherIcon(code, isDay, { size: 70 })}
+    </span>`;
+  }
+
   function renderWeather(data) {
     const city = state.city;
     const cur = data.current || {};
@@ -376,10 +390,7 @@
             <p class="hero__eyebrow">${isDay ? "Right now" : "Right now · night"}</p>
             <p class="location-name" data-testid="location-name">${esc(city.label)}</p>
           </div>
-          <div class="hero__icon${deepInk(themeIsDark() || scene.endsWith("night"))}">
-            ${textureMarkup(scene)}
-            ${Icons.weatherIcon(code, isDay, { size: 70 })}
-          </div>
+          ${heroIcon(code, isDay, scene)}
         </div>
         <div class="hero__reading">
           <div class="temp-block">
@@ -391,12 +402,12 @@
               <span class="feels-like" data-testid="feels-like">${temp(Number(cur.apparent_temperature), true)}</span>
             </div>
           </div>
-        </div>
-        <div class="hero__chips">
-          ${metricRow("humidity", "droplet", `${Math.round(Number(cur.relative_humidity_2m))}%`, "Humidity")}
-          ${metricRow("wind", "wind", windText(Number(cur.wind_speed_10m)), "Wind")}
-          ${metricRow("sunrise", "sunrise", String(sunrise).slice(11, 16), "Sunrise")}
-          ${metricRow("sunset", "sunset", String(sunset).slice(11, 16), "Sunset")}
+          <div class="hero__chips">
+            ${metricRow("humidity", "droplet", `${Math.round(Number(cur.relative_humidity_2m))}%`, "Humidity")}
+            ${metricRow("wind", "wind", windText(Number(cur.wind_speed_10m)), "Wind")}
+            ${metricRow("sunrise", "sunrise", String(sunrise).slice(11, 16), "Sunrise")}
+            ${metricRow("sunset", "sunset", String(sunset).slice(11, 16), "Sunset")}
+          </div>
         </div>
       </div>`;
     el.current.hidden = false;
@@ -408,8 +419,8 @@
 
   /* Data bars are inline SVG: CSS paint on a DOM element counts as a background
      candidate for any text sampled on top of it, so decoration belongs in the SVG
-     layer where it cannot be mistaken for a text background. */
-  /* Temperature gets one colour language: the rail in a forecast row and the
+     layer where it cannot be mistaken for a text background.
+     Temperature gets one colour language: the rail in a forecast row and the
      two numbers beside it use the same bucket, so the rail reads as
      "how warm this day runs" and not as decoration. */
   const tempBucket = (c) =>
@@ -464,7 +475,7 @@
       markup += `<div class="hour${night}${i === 0 ? " hour--now" : ""}" data-testid="hour-item">
         <span class="hour__nowtag" aria-hidden="true">${tag}</span>
         <span class="hour-label" data-testid="hour-label">${esc(String(t).slice(11, 16))}</span>
-        <span class="hour__icon${deepInk(themeIsDark() || isDay === 0)}">${Icons.weatherIcon(code, isDay, { size: 27 })}</span>
+        <span class="hour__icon${deepInk(themeIsDark())}">${Icons.weatherIcon(code, isDay, { size: 27 })}</span>
         <span class="hour-temperature" data-testid="hour-temperature">${temp(Number(hourly.temperature_2m[idx]))}</span>
         <span class="hour__precip">${showPop ? Icons.uiIcon("droplet", { size: 10 }) + Math.round(pop) + "%" : ""}</span>
       </div>`;
@@ -535,7 +546,6 @@
       </div>`;
     }
     el.dayList.innerHTML = markup;
-    el.forecastNote.textContent = n ? `${n} days` : "";
     el.forecastSection.hidden = n === 0;
   }
 
