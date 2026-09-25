@@ -29,6 +29,15 @@ suite can run locally — **never tune it to make it pass**. Run it with
 - Hour items must stay **non-interactive** (`div`, not `button`) to be exempt from the
   44px rule; the `hour-label` text must be exactly the `HH:00` slice, so the "Now" /
   "Tomorrow" affordances live in a separate `aria-hidden` slot.
+- The hero icon tile carries **no fill and no border of its own**. A translucent
+  dark veil over the hero sky measured ~15% darker than the surrounding sky and,
+  capped by a light 1px hairline, read as a rendering glitch on its top edge (the
+  operator's "dark sliver"). The window is defined by its clipped sky texture only.
+- Night hour cards are a **tint** (`--night-card` sits one step off the surface in
+  each theme, same ink in light), never a solid navy tile - a saturated block in a
+  row reads as selection. `.hour--now` wins the row: accent border + top band +
+  accented "Now" (`--accent-strong` in light, 6.1:1 on `--surface-3`; `--accent`
+  in dark, 5.2:1).
 - Empty-state hint pills are real 44px buttons but `aria-hidden` **and** `tabIndex = -1`
   (the contract allows exactly one button whose accessible name matches `/search/i`).
 - Recents record a **sequence number taken at submit time**, and a single-match city is
