@@ -244,6 +244,32 @@ svg {
   .hero[data-scene$="night"] .hero__stars {
     animation: twinkle 4.5s var(--ease) infinite alternate;
   }
+  /* Sky life: transform-only, on decorative SVG groups, so nothing that text is
+     sampled against ever sits at partial opacity or shifts layout. */
+  .hero__sky .sky-fog {
+    animation: fog-drift 24s var(--ease) infinite alternate;
+  }
+  .hero__sky .sky-rain {
+    animation: sky-bob 2.2s ease-in-out infinite alternate;
+  }
+  .hero__sky .sky-snow {
+    animation: snow-sway 7s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes fog-drift {
+  from { transform: translateX(-9px); }
+  to { transform: translateX(9px); }
+}
+
+@keyframes sky-bob {
+  from { transform: translate(0, -3px); }
+  to { transform: translate(-4px, 3px); }
+}
+
+@keyframes snow-sway {
+  from { transform: translate(-5px, -2px); }
+  to { transform: translate(5px, 3px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -829,6 +855,12 @@ html[data-theme="dark"] .theme-icon--moon {
   background: var(--surface-2);
 }
 
+.day__icon {
+  display: grid;
+  place-items: center;
+  color: var(--text);
+}
+
 .day__main {
   min-width: 0;
   display: flex;
@@ -1204,6 +1236,8 @@ html[data-theme="dark"] .panel--error .btn:hover {
   letter-spacing: -0.01em;
   box-shadow: var(--shadow-1);
   text-align: left;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 .chip:hover {

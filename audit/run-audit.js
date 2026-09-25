@@ -100,6 +100,10 @@ function judge(label, res) {
       }
       const res = await page.evaluate(`${AUDIT}\n;auditPage(${JSON.stringify(OPTS)})`);
       judge(`${theme}/results/hero=${scene}`, res);
+      if (theme === 'light') {
+        const card = page.locator('.hero');
+        await card.screenshot({ path: `audit/scene-${scene}.png` });
+      }
       await context.close();
     }
 
@@ -161,6 +165,8 @@ function judge(label, res) {
     await page.getByTestId('current-weather').waitFor();
     await page.waitForTimeout(400);
     await page.screenshot({ path: `audit/shot-${theme}-results.png`, fullPage: true });
+    await page.locator('.hero').screenshot({ path: `audit/shot-${theme}-hero.png` });
+    await page.screenshot({ path: `audit/shot-${theme}-viewport.png` });
     await page.close();
   }
   await shotContext.close();

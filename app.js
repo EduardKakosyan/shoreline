@@ -168,6 +168,8 @@
 
   function paintUnitToggle() {
     const celsius = state.units === "C";
+    const foot = $("footnote-unit");
+    if (foot) foot.textContent = celsius ? "shown in Celsius" : "shown in Fahrenheit";
     unitToggle.dataset.unit = state.units;
     unitToggle.querySelector(".unit-toggle__dial").innerHTML = celsius
       ? '<span class="u-c">°C</span>'
@@ -310,28 +312,34 @@
     `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--sky-glow)" opacity="${o}"/>`;
 
   const streaks = (n, o) =>
+    '<g class="sky-rain">' +
     Array.from({ length: n }, (_, i) => {
       const x = 16 + ((i * 67) % 372);
       const y = 74 + ((i * 41) % 156);
       return `<line x1="${x}" y1="${y}" x2="${x - 10}" y2="${y + 30}" stroke="var(--sky-glow)" stroke-width="2.4" stroke-linecap="round" opacity="${o}"/>`;
-    }).join("");
+    }).join("") +
+    "</g>";
 
   const snowDots = (n, o) =>
+    '<g class="sky-snow">' +
     Array.from({ length: n }, (_, i) => {
       const x = 14 + ((i * 89) % 376);
       const y = 62 + ((i * 57) % 168);
       return `<circle cx="${x}" cy="${y}" r="${(1.5 + (i % 3) * 0.9).toFixed(1)}" fill="var(--sky-glow)" opacity="${o}"/>`;
-    }).join("");
+    }).join("") +
+    "</g>";
 
   /* Bands stay inside the 0..400 viewBox: an element wider than the viewport is
      an overflow finding even when the hero clips it visually. */
   const fogBands = () =>
+    '<g class="sky-fog">' +
     Array.from({ length: 6 }, (_, i) => {
       const y = 44 + i * 38;
       const h = 13 + (i % 3) * 6;
       const inset = i % 2 ? 0 : 26;
       return `<rect x="${inset}" y="${y}" width="${400 - inset * 2}" height="${h}" rx="${h / 2}" fill="var(--sky-glow)" opacity="${i % 2 ? 0.1 : 0.16}"/>`;
-    }).join("");
+    }).join("") +
+    "</g>";
 
   const STARS = `<g class="hero__stars" fill="#eef4ff">
       <circle cx="42" cy="34" r="1.9"/><circle cx="96" cy="72" r="1.3"/>
@@ -433,6 +441,8 @@
     const span = Math.max(1, tMax - tMin);
 
     let markup = "";
+    const firstDate = String(times[start] || "").slice(0, 10);
+    let markedNextDay = false;
     for (let i = 0; i < 24; i++) {
       const idx = start + i;
       const t = times[idx];
@@ -443,8 +453,16 @@
       const showPop = Number.isFinite(pop) && pop >= 20;
       const tv = Number(hourly.temperature_2m[idx]);
       const fill = 12 + Math.round(((tv - tMin) / span) * 88);
+      /* The slot above the time label is display-only: "Now" on the live hour,
+         "Tomorrow" on the first hour that crosses into the next day. */
+      let tag = "";
+      if (i === 0) tag = "Now";
+      else if (markedNextDay === false && String(t).slice(0, 10) !== firstDate) {
+        tag = "Tomorrow";
+        markedNextDay = true;
+      }
       markup += `<div class="hour${i === 0 ? " hour--now" : ""}" data-testid="hour-item">
-        <span class="hour__nowtag" aria-hidden="true">${i === 0 ? "Now" : ""}</span>
+        <span class="hour__nowtag" aria-hidden="true">${tag}</span>
         <span class="hour-label" data-testid="hour-label">${esc(String(t).slice(11, 16))}</span>
         <span class="hour__icon">${Icons.weatherIcon(code, isDay, { size: 27 })}</span>
         <span class="hour-temperature" data-testid="hour-temperature">${temp(Number(hourly.temperature_2m[idx]))}</span>
