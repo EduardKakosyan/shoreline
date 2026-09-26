@@ -1917,7 +1917,7 @@ html[data-theme="dark"] .empty-state {
 }
 
 .tc-bandlabel {
-  fill: var(--tide-kind);
+  fill: var(--water-muted);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -1948,6 +1948,14 @@ html[data-theme="dark"] .empty-state {
   stroke-width: 2;
 }
 
+.tc-turn--high circle {
+  /* filled disc for a high, hollow ring for a low: the chart carries four turns and
+     only the time beside each, so the shape says which is which. The tiles under the
+     chart and the legend spell it out in words — the shape is never the only cue. */
+  fill: var(--tide-line);
+  stroke: var(--tide-line);
+}
+
 .tc-turn text {
   fill: var(--tide-label);
   font-size: 10px;
@@ -1955,16 +1963,44 @@ html[data-theme="dark"] .empty-state {
   font-variant-numeric: tabular-nums;
 }
 
-.tc-turnkind {
-  fill: var(--tide-kind);
-  font-size: 8.5px;
-  font-weight: 800;
-  letter-spacing: 0.07em;
+.tide-legend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 6px 0 0;
+  color: var(--water-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
+.tide-legend__mark {
+  width: 7px;
+  height: 7px;
+  margin-left: 8px;
+  border: 2px solid var(--tide-line);
+  border-radius: 50%;
+}
+
+.tide-legend__mark:first-child {
+  margin-left: 0;
+}
+
+.tide-legend__mark--high {
+  background: var(--tide-line);
+}
+
+.tide-legend__now {
+  width: 7px;
+  height: 7px;
+  margin-left: 8px;
+  border-radius: 50%;
+  background: var(--tide-now);
+}
+
 .tc-hour {
-  fill: var(--tide-kind);
+  fill: var(--water-muted);
   font-size: 9.5px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;

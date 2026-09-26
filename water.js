@@ -356,6 +356,50 @@
      hour gridlines, mean sea level, and now. */
   const CHART_MIN_W = 260;
   const CHART_MIN_H = 124;
+  /* Font sizes as CSS paints them, so label boxes can be measured before the SVG is
+     built — the viewBox is 1:1 with the box, so these are px on screen too. */
+  const TIME_PX = 10;
+  const KIND_PX = 8.5;
+  const BAND_BASELINE = 10;
+
+  const boxOf = (text, cx, baseline, px) => {
+    const w = String(text).length * px * 0.62;
+    return { x1: cx - w / 2, x2: cx + w / 2, y1: baseline - px * 0.82, y2: baseline + px * 0.22 };
+  };
+  const hits = (b, boxes) => boxes.some((o) => b.x1 < o.x2 && o.x1 < b.x2 && b.y1 < o.y2 && o.y1 < b.y2);
+
+  /* One word per turn, not two. Four turns a day means four times, and adding
+     "High"/"Low" beside every one pushes fifteen words into a 366x128 box, where
+     they land on the dawn and dusk labels, on the "now" pill and on each other.
+     High and low are carried instead by a filled disc and a hollow ring, and by
+     which side of the curve their time sits on; the tiles under the chart spell
+     each turn out in full. A time is nudged to the other side of the curve, then
+     offset, and only dropped as a last resort — a missing label beats a pile. */
+  function labelTurns(m, x, y, cl, top, bottom, W, occupied) {
+    const placed = occupied.slice();
+    const out = [];
+    for (const t of m.turns) {
+      const mx = x(t.hour);
+      const my = y(t.heightM);
+      const high = t.kind === "High";
+      const w = String(t.time).length * TIME_PX * 0.66;
+      const cx = cl(mx, 2 + w / 2, W - 2 - w / 2);
+      const boxAt = (up, dy) => boxOf(t.time, cx, cl(my + (up ? -10 : 16) + dy, top + 8, bottom - 2), TIME_PX);
+      const tries = [boxAt(high, 0), boxAt(!high, 0), boxAt(high, -10), boxAt(!high, 10), boxAt(high, 10), boxAt(!high, -10)];
+      const chosen = tries.find((b) => !hits(b, placed));
+      if (chosen) placed.push(chosen);
+      const label = chosen
+        ? `<text x="${cx.toFixed(1)}" y="${(chosen.y2 - TIME_PX * 0.22).toFixed(1)}" text-anchor="middle">${t.time}</text>`
+        : "";
+      out.push(
+        `<g class="tc-turn tc-turn--${t.kind.toLowerCase()}">` +
+          `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="${high ? "4" : "3.4"}"/>` +
+          label +
+          `</g>`,
+      );
+    }
+    return out.join("");
+  }
 
   /* Catmull-Rom -> cubic bezier: hourly tide values are smooth, and a polyline reads
      as a zigzag at 24 points across 300px. */
@@ -434,26 +478,33 @@
       const to = x(cl((centreMin + LOW_LIGHT_MIN) / 60, 0, 23));
       return (
         `<rect class="tc-band" x="${from.toFixed(1)}" y="${top}" width="${(to - from).toFixed(1)}" height="${bottom - top}" rx="8"/>` +
-        `<text class="tc-bandlabel" x="${((from + to) / 2).toFixed(1)}" y="10" text-anchor="middle">${label}</text>`
+        `<text class="tc-bandlabel" x="${((from + to) / 2).toFixed(1)}" y="${BAND_BASELINE}" text-anchor="middle">${label}</text>`
       );
     };
+    /* The ruler along the bottom (hour ticks and the "now" pill) and the strip above
+       the plot (dawn and dusk) are already owned; a turn's labels must not walk into
+       either, so their boxes are registered here before labelling starts. */
+    const HOUR_PX = 9.5;
+    const pillW = 30;
+    const nowX = m.nowHour === null ? null : x(m.nowHour);
+    const nowY = m.nowHour === null || m.series[m.nowHour] === null ? null : y(m.series[m.nowHour]);
+    const nowPillX = nowX === null ? null : cl(nowX - pillW / 2, 2, W - pillW - 2);
+    const nowTextX = nowX === null ? null : cl(nowX, 2 + pillW / 2, W - pillW / 2 - 2);
 
-    const marks = m.turns
-      .map((t) => {
-        const mx = x(t.hour);
-        const my = y(t.heightM);
-        const high = t.kind === "High";
-        const ly = cl(high ? my - 9 : my + 15, top + 8, bottom - 2);
-        const ky = cl(high ? ly - 10 : ly + 10, 10, H - 4);
-        return (
-          `<g class="tc-turn tc-turn--${t.kind.toLowerCase()}">` +
-          `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="3.4"/>` +
-          `<text x="${mx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle">${t.time}</text>` +
-          `<text class="tc-turnkind" x="${mx.toFixed(1)}" y="${ky.toFixed(1)}" text-anchor="middle">${t.kind}</text>` +
-          `</g>`
-        );
-      })
-      .join("");
+    const occupied = [
+      { x1: 0, x2: W, y1: 0, y2: top - 1 },
+      { x1: 0, x2: W, y1: bottom + 1, y2: H },
+      ...(nowX === null ? [] : [{ x1: nowPillX, x2: nowPillX + pillW, y1: H - 17, y2: H - 4 }]),
+      ...[0, 6, 12, 18, 23].map((h) => {
+        const anchor = h === 0 ? "start" : h === 23 ? "end" : "middle";
+        const cx = x(h);
+        const w = HOUR_PX * 0.66 * 2;
+        const left = anchor === "start" ? cx : anchor === "end" ? cx - w : cx - w / 2;
+        return { x1: left, x2: left + w, y1: H - 6 - HOUR_PX * 0.82, y2: H - 6 + HOUR_PX * 0.22 };
+      }),
+    ];
+
+    const marks = labelTurns(m, x, y, cl, top, bottom, W, occupied);
 
     const hours = [0, 6, 12, 18, 23]
       .map(
@@ -462,17 +513,14 @@
       )
       .join("");
 
-    const nowX = m.nowHour === null ? null : x(m.nowHour);
-    const nowY = m.nowHour === null || m.series[m.nowHour] === null ? null : y(m.series[m.nowHour]);
-    const pillW = 30;
     const now =
       nowX === null
         ? ""
         : `<g class="tc-now">` +
           `<line x1="${nowX.toFixed(1)}" y1="${top}" x2="${nowX.toFixed(1)}" y2="${bottom + 2}"/>` +
           (nowY === null ? "" : `<circle cx="${nowX.toFixed(1)}" cy="${nowY.toFixed(1)}" r="4.6"/>`) +
-          `<rect class="tc-nowpill" x="${cl(nowX - pillW / 2, 2, W - pillW - 2).toFixed(1)}" y="${H - 17}" width="${pillW}" height="13" rx="6.5"/>` +
-          `<text x="${cl(nowX, 2 + pillW / 2, W - pillW / 2 - 2).toFixed(1)}" y="${H - 7}" text-anchor="middle">now</text>` +
+          `<rect class="tc-nowpill" x="${nowPillX.toFixed(1)}" y="${H - 17}" width="${pillW}" height="13" rx="6.5"/>` +
+          `<text x="${nowTextX.toFixed(1)}" y="${H - 7}" text-anchor="middle">now</text>` +
           `</g>`;
 
     /* A hour tick that sits under the "now" pill would fight it, so drop that tick. */
@@ -569,6 +617,15 @@
           ${trendChip}
         </p>
         <div class="tide-chart" data-testid="tide-chart"></div>
+        ${
+          m.turns.length
+            ? `<p class="tide-legend" aria-hidden="true">
+              <span class="tide-legend__mark tide-legend__mark--high"></span> high
+              <span class="tide-legend__mark tide-legend__mark--low"></span> low
+              <span class="tide-legend__now"></span> now
+            </p>`
+            : ""
+        }
         <ul class="tide-events">${events}</ul>
         <p class="best-times">${esc(bestTimes(m))}</p>
         <p class="tide-note" data-testid="tide-note">Tide times are approximate — hourly model values, not a harbour table.</p>
