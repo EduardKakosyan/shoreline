@@ -948,6 +948,11 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
   body.is-coastal .water__panel {
     padding: 12px 13px 13px;
   }
+  /* Twelve pixels shorter than the default chart, so the worst honest reason (five
+     named factors = six lines at 390px) still leaves the chart whole above the fold. */
+  body.is-coastal .tide-chart {
+    --tide-chart-height: 128px;
+  }
 }
 
 /* .hero__reading is a plain column on a phone; the desktop rules put the

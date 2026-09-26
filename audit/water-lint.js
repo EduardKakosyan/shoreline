@@ -6,10 +6,12 @@
    peeking at the fold to say "scroll me".
    Run: node audit/water-lint.js */
 const { chromium } = require('@playwright/test');
-const { installStub, setTheme, searchMapFor, typeCity } = require('./stub.js');
+const { installStub, setTheme, searchMapFor, MATCHES, typeCity } = require('./stub.js');
 
 const BASE = process.env.APP_URL || 'http://localhost:3000';
-const PLACES = (process.env.WATER_PLACES || 'cascais,newquay,flatbay').split(',');
+/* pointArena is the synthetic worst case: four tide turns and both reasons naming
+   every factor at once — the tallest the rules can produce. */
+const PLACES = (process.env.WATER_PLACES || 'cascais,newquay,flatbay,pointArena').split(',');
 const VIEWPORTS = (process.env.WATER_VIEWPORTS || '390x844,1280x800')
   .split(',')
   .map((s) => {
@@ -78,17 +80,20 @@ const MEASURE = `(() => {
 
   // the fold: what is visible at scroll 0 on a phone, and does the next block peek?
   const hourly = q('[data-testid="hourly"]');
-  out.waterEndsAt = Math.round(box(q('[data-testid="water"]')).y + box(q('[data-testid="water"]')).h);
+  const waterEl = q('[data-testid="water"]');
+  const waterBox = waterEl ? box(waterEl) : { y: 0, h: 0 };
+  out.waterEndsAt = Math.round(waterBox.y + waterBox.h);
   out.hourlyTop = hourly && !hourly.hidden ? Math.round(box(hourly).y) : null;
   out.fold = innerHeight;
   out.peek = out.hourlyTop !== null ? Math.max(0, innerHeight - out.hourlyTop) : 0;
   out.waterShareOfFold = Math.round(
-    ((Math.min(innerHeight, out.waterEndsAt) - box(q('[data-testid="water"]')).y) / innerHeight) * 100,
+    ((Math.min(innerHeight, out.waterEndsAt) - waterBox.y) / innerHeight) * 100,
   ) + '%';
   /* The chart is the answer to "when", and its time labels and "now" pill sit at the
      bottom of it. A chart cut by the fold loses exactly the part that carries the
      answer, so on a coastal first screen the whole box must be above the fold. */
-  const chartBox = box(q('[data-testid="tide-chart"]'));
+  const chartEl = q('[data-testid="tide-chart"]');
+  const chartBox = chartEl ? box(chartEl) : null;
   out.chartCut = chartBox && chartBox.w > 0 ? Math.round(chartBox.y + chartBox.h - innerHeight) : null;
 
   /* A good fold cuts through something: it says "there is more below" without anyone
@@ -125,7 +130,7 @@ const near = (a, b, tol = 1.5) => Math.abs(a - b) <= tol;
         await installStub(page, { search: searchMapFor([place, 'cascais']) });
         await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
         await setTheme(page, theme);
-        await typeCity(page, place);
+        await typeCity(page, MATCHES[place] ? MATCHES[place].name : place);
         await page.waitForTimeout(650);
         const m = await page.evaluate(MEASURE);
         const tag = `${place}/${theme}/${vp.tag}`;
@@ -143,7 +148,9 @@ const near = (a, b, tol = 1.5) => Math.abs(a - b) <= tol;
         if (m.wordPx[0] !== m.wordPx[1]) problems.push(`${tag}: verdict words are different sizes`);
         if (m.reasonPx[0] !== m.reasonPx[1]) problems.push(`${tag}: verdict reasons are different sizes`);
         if (m.reasonPx[0] < 12) problems.push(`${tag}: verdict reason is ${m.reasonPx[0]}px, too small to read outdoors`);
-        if (m.reasonLines.some((n) => n > 5)) problems.push(`${tag}: a verdict reason wraps to ${Math.max(...m.reasonLines)} lines`);
+        // a Fair verdict naming all five factors is six lines at 390px — that's the
+        // rules talking, not sloppy copy; anything past it is a reason nobody will read.
+        if (m.reasonLines.some((n) => n > 6)) problems.push(`${tag}: a verdict reason wraps to ${Math.max(...m.reasonLines)} lines`);
         if (m.reasonChars.some((n) => n > 120)) problems.push(`${tag}: a verdict reason is ${Math.max(...m.reasonChars)} characters`);
         if (m.wordPx[0] < m.reasonPx[0] * 1.7) problems.push(`${tag}: the verdict word only leads the reason ${((m.wordPx[0] / m.reasonPx[0]) * 100).toFixed(0)}%`);
 

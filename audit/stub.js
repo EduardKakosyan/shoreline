@@ -13,6 +13,8 @@ const MATCHES = {
   cairo: { name: 'Cairo', admin1: 'Cairo Governorate', country: 'Egypt', lat: 30.0601, lon: 31.2466 },
   honolulu: { name: 'Honolulu', admin1: 'Hawaii', country: 'United States', lat: 21.30694, lon: -157.85834 },
   tokyo: { name: 'Tokyo', admin1: 'Tokyo', country: 'Japan', lat: 35.6895, lon: 139.69171 },
+  flatbay: { name: 'Flatbay', admin1: 'Nowhere', country: 'Land', lat: 54.0, lon: -5.0 },
+  pointArena: { name: 'Point Arena', admin1: 'California', country: 'United States', lat: 39.0, lon: -123.0 },
 };
 
 const CITIES = {
@@ -30,6 +32,7 @@ const CITIES = {
   tokyo: { lat: 35.6895, lon: 139.69171, current: { temperature_2m: 18.4, relative_humidity_2m: 82, weather_code: 63, wind_speed_10m: 13.2 }, daily: { weather_code: [63, 61, 3, 2, 0], temperature_2m_max: [19.2, 20.4, 22.1, 23.6, 24.8], temperature_2m_min: [14.1, 14.9, 15.2, 14.4, 13.6] } },
   cascais: { lat: 38.7, lon: -9.423, current: { temperature_2m: 24.6, relative_humidity_2m: 58, weather_code: 1, wind_speed_10m: 16.4 }, daily: { weather_code: [1, 2, 0, 1, 3], temperature_2m_max: [25.8, 24.3, 26.1, 23.6, 22.4], temperature_2m_min: [17.4, 18.1, 17.6, 18.9, 16.4] } },
   newquay: { lat: 50.414, lon: -5.061, current: { temperature_2m: 14.2, relative_humidity_2m: 81, weather_code: 63, wind_speed_10m: 42.6 }, daily: { weather_code: [63, 80, 3, 2, 61], temperature_2m_max: [15.8, 16.3, 17.1, 18.0, 15.2], temperature_2m_min: [11.4, 12.1, 12.4, 13.8, 11.9] } },
+  pointArena: { lat: 39.0, lon: -123.0, current: { temperature_2m: 17.4, relative_humidity_2m: 84, weather_code: 51, wind_speed_10m: 26.2 }, daily: { weather_code: [51, 45, 2, 1, 0], temperature_2m_max: [20.4, 21.1, 19.6, 18.9, 20.2], temperature_2m_min: [14.1, 14.8, 13.6, 12.9, 13.7] } },
   flatbay: { lat: 54.0, lon: -5.0, current: { temperature_2m: 11.2, relative_humidity_2m: 93, weather_code: 45, wind_speed_10m: 9.4 }, daily: { weather_code: [45, 3, 2, 51, 1], temperature_2m_max: [13.4, 14.9, 16.1, 15.0, 12.2], temperature_2m_min: [8.6, 9.2, 10.7, 11.4, 7.9] } },
   cairo: { lat: 30.0601, lon: 31.2466, current: { temperature_2m: 36.8, relative_humidity_2m: 19, weather_code: 0, wind_speed_10m: 7.8 }, daily: { weather_code: [0, 0, 0, 1, 2], temperature_2m_max: [38.4, 39.1, 37.6, 36.2, 35.0], temperature_2m_min: [24.7, 25.3, 24.1, 23.6, 22.9] } },
 };
@@ -50,6 +53,11 @@ const MARINE = {
   lisbon: { current: { wave_height: 1.2, wave_direction: 300, wave_period: 11.6, swell_wave_height: 1.1, swell_wave_direction: 315, swell_wave_period: 12.3, sea_surface_temperature: 19.4 }, tide: { amplitude: 1.2, highAt: 3.7, skew: 0.1 } },
   sydney: { current: { wave_height: 1.8, wave_direction: 150, wave_period: 10.2, swell_wave_height: 1.6, swell_wave_direction: 135, swell_wave_period: 11.0, sea_surface_temperature: 18.1 }, tide: { amplitude: 0.8, highAt: 5.1, skew: 0.08 } },
   honolulu: { current: { wave_height: 0.9, wave_direction: 62, wave_period: 12.8, swell_wave_height: 0.8, swell_wave_direction: 68, swell_wave_period: 15.2, sea_surface_temperature: 26.4 }, tide: { amplitude: 0.66, highAt: 8.2, skew: 0.05 } },
+  /* The worst case the fixtures never produce: four tide turns *and* both verdict
+     reasons holding every factor at once (Fair/Fair naming waves, wind, rain, cloud,
+     cool, and waves, wind, tide). Honolulu hit this live and pushed the tide chart
+     33px below the phone fold, so the fold budget is now asserted against it. */
+  pointArena: { current: { wave_height: 1.9, wave_direction: 250, wave_period: 12.0, swell_wave_height: 2.0, swell_wave_direction: 255, swell_wave_period: 13.0, sea_surface_temperature: 17.0 }, tide: { amplitude: 1.2, highAt: 3.7, skew: 0.1 } },
   // a flat sea: no turns at all, an edge case the live API really does produce
   flatbay: { current: { wave_height: 0.2, wave_direction: 20, wave_period: 3.1, swell_wave_height: 0.2, swell_wave_direction: 25, swell_wave_period: 4.0, sea_surface_temperature: 9.2 }, tide: { amplitude: 0.0, highAt: 0, skew: 0 } },
 };
@@ -100,6 +108,7 @@ const COASTAL_MATCHES = {
   cascais: { name: 'Cascais', admin1: 'Lisbon District', country: 'Portugal', lat: 38.7, lon: -9.423 },
   newquay: { name: 'Newquay', admin1: 'England', country: 'United Kingdom', lat: 50.414, lon: -5.061 },
   flatbay: { name: 'Flatbay', admin1: 'Nowhere', country: 'Land', lat: 54.0, lon: -5.0 },
+  pointArena: { name: 'Point Arena', admin1: 'California', country: 'United States', lat: 39.0, lon: -123.0 },
 };
 
 const fullLabel = (key) => {

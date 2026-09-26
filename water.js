@@ -562,7 +562,7 @@
         ${ratingCard("beach", "Beach today", v.beach, "beach")}
         ${ratingCard("fishing", "Fishing today", v.fishing, "fish")}
       </div>
-      <p class="water__disclaimer">An outlook from today's model data, not a promise — use your eyes once you're there.</p>
+      <p class="water__disclaimer">An outlook from today's model data, not a promise.</p>
       <section class="water__panel tide">
         <p class="tide__head">
           <span class="water__subtitle">Tides today</span>
