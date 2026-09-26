@@ -85,6 +85,12 @@ const MEASURE = `(() => {
   out.waterShareOfFold = Math.round(
     ((Math.min(innerHeight, out.waterEndsAt) - box(q('[data-testid="water"]')).y) / innerHeight) * 100,
   ) + '%';
+  /* The chart is the answer to "when", and its time labels and "now" pill sit at the
+     bottom of it. A chart cut by the fold loses exactly the part that carries the
+     answer, so on a coastal first screen the whole box must be above the fold. */
+  const chartBox = box(q('[data-testid="tide-chart"]'));
+  out.chartCut = chartBox && chartBox.w > 0 ? Math.round(chartBox.y + chartBox.h - innerHeight) : null;
+
   /* A good fold cuts through something: it says "there is more below" without anyone
      having to scroll to find that out. */
   out.foldCuts = [...document.querySelectorAll('.water__panel, .rating, [data-testid="hourly"]')]
@@ -144,6 +150,8 @@ const near = (a, b, tol = 1.5) => Math.abs(a - b) <= tol;
         if (m.clipped.length) problems.push(`${tag}: clipped text in the water section: ${m.clipped.join(' | ')}`);
         if (m.eventCount > 1 && m.eventRows > (vp.width >= 940 ? 2 : 2)) problems.push(`${tag}: tide turns wrap to ${m.eventRows} rows`);
         if (m.eventHeights.length > 1) problems.push(`${tag}: tide turn tiles are ragged (${m.eventHeights.join(', ')})`);
+        if (m.chartCut !== null && m.chartCut > 0)
+          problems.push(`${tag}: the tide chart is cut by the fold — its bottom ${m.chartCut}px (the time labels and "now") sit below the first screen`);
         if (m.seaWidths.length > 1) problems.push(`${tag}: sea-state tiles are ragged (${m.seaWidths.join(', ')})`);
         if (m.panelWidths.length > 1) problems.push(`${tag}: water panels are different widths (${m.panelWidths.join(', ')})`);
         if (m.chartFills === false) problems.push(`${tag}: the chart does not fill its box`);
