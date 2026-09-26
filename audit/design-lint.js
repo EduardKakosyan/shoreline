@@ -8,6 +8,7 @@ const { installStub, setTheme, searchMapFor, MATCHES } = require('./stub.js');
 const BASE = process.env.APP_URL || 'http://localhost:3000';
 const LONDONS = ['london_gb', 'london_ca', 'london_oh', 'london_ky', 'london_ar'];
 const SEARCH = Object.assign(searchMapFor(Object.keys(MATCHES)), { london: LONDONS, atlantis: [] });
+const CITY = process.env.LINT_CITY || 'Berlin';
 
 const MEASURE = `(() => {
   const px = (el, p) => parseFloat(getComputedStyle(el)[p]);
@@ -129,6 +130,16 @@ const MEASURE = `(() => {
     .filter((p) => vis(p) && p.getBoundingClientRect().width > 620 && p.textContent.trim().length > 60)
     .map((p) => p.className + ' ' + Math.round(p.getBoundingClientRect().width) + 'px');
 
+  // forecast cards: equal widths, one column, no stretched-out card
+  const days = [...document.querySelectorAll('[data-testid="forecast-day"]')].map((d) => d.getBoundingClientRect());
+  if (days.length) {
+    out.dayWidths = [...new Set(days.map((d) => Math.round(d.width)))];
+    out.dayRows = [...new Set(days.map((d) => Math.round(d.y)))].length;
+    out.dayMaxWidth = Math.round(Math.max(...days.map((d) => d.width)));
+  }
+  if (out.dayWidths && out.dayWidths.length > 1) out.notes.push('forecast cards are different widths: ' + out.dayWidths.join(', '));
+  if (out.dayMaxWidth > 620) out.notes.push('a forecast card is ' + out.dayMaxWidth + 'px wide — stretched');
+
   // horizontal overflow + scroll height
   out.docScrollWidth = document.documentElement.scrollWidth;
   out.innerWidth = window.innerWidth;
@@ -145,7 +156,7 @@ async function run(browser, width, height, theme) {
   await page.fill('#city-input', 'Paris');
   await page.press('#city-input', 'Enter');
   await page.getByTestId('current-weather').waitFor();
-  await page.fill('#city-input', 'Berlin');
+  await page.fill('#city-input', CITY);
   await page.press('#city-input', 'Enter');
   await page.getByTestId('current-weather').waitFor();
   await page.waitForTimeout(650);
@@ -160,7 +171,7 @@ async function run(browser, width, height, theme) {
   for (const [w, h, label] of [[390, 844, 'phone'], [1280, 900, 'desktop']]) {
     for (const theme of ['light', 'dark']) {
       const r = await run(browser, w, h, theme);
-      console.log(`\n### ${label} ${theme}`);
+      console.log(`\n### ${label} ${theme} · ${CITY}`);
       console.log('  hero temp', r.heroTempPx + 'px', '| vs condition', r.tempToConditionRatio + 'x', '| vs body', r.tempToBodyRatio + 'x', '| temp share of hero', r.tempShareOfHero, '| hero fills', r.heroFill);
       console.log('  radii', JSON.stringify(r.radii));
       console.log('  gap scale', r.gapScale.join(' '));

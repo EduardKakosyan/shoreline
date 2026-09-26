@@ -863,7 +863,7 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
     min-height: 0;
     padding: 6px 9px;
     gap: 1px;
-    border-radius: 11px;
+    border-radius: var(--radius-xs);
   }
   .is-coastal .hero__chips .metric__label {
     font-size: 0.5625rem;
@@ -1973,7 +1973,7 @@ html[data-theme="dark"] .empty-state {
   flex-direction: column;
   gap: 1px;
   padding: 7px 9px;
-  border-radius: 11px;
+  border-radius: var(--radius-xs);
   background: var(--water-panel-2);
   border: 1px solid var(--water-border);
 }

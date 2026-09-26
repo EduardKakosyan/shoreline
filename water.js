@@ -379,9 +379,16 @@
     const top = 16;
     const bottom = H - 24;
     const vals = m.series.filter((v) => v !== null);
-    const lo = vals.length ? Math.min(...vals) : -1;
-    const hi = vals.length ? Math.max(...vals) : 1;
-    const span = Math.max(0.2, hi - lo);
+    let lo = vals.length ? Math.min(...vals) : -1;
+    let hi = vals.length ? Math.max(...vals) : 1;
+    /* A dead-flat sea (real at some model points) would otherwise pin its line to the
+       floor of the box; centre it instead, so "flat" reads as flat. */
+    if (hi - lo < 0.05) {
+      const mid = (hi + lo) / 2;
+      lo = mid - 0.5;
+      hi = mid + 0.5;
+    }
+    const span = hi - lo;
     const x = (h) => padL + (h / 23) * (W - padL - padR);
     const y = (v) => bottom - ((v - lo) / span) * (bottom - top);
     const cl = (v, a, b) => Math.max(a, Math.min(b, v));
