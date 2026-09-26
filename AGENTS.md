@@ -102,6 +102,23 @@ suite can run locally — **never tune it to make it pass**. Run it with
   one. `audit/stub.js` grew an `inland` option that answers the marine API with 200 +
   nulls for a coastal fixture key, so `look.js` can drive both readings of one city.
 
+- An `svg` `fill` is **not** sampled for contrast by the acceptance checks, but the
+  moment that same colour paints DOM text it is. `--tide-kind` (#6b7d92) had lived for
+  two runs at 3.96:1 on the light water panel as a pure chart fill — legal while it only
+  painted SVG shapes, and an immediate coastal-state contrast failure the day the tide
+  legend made it real text. Measure a token against the panel it will actually sit on
+  before reusing it for text; `--water-muted` is the one that clears 4.5:1 in both
+  themes (6.85 light / 9.02 dark).
+- Words are the scarce resource inside the ~366x128 tide chart. Four turns a day plus a
+  "High"/"Low" beside each is fifteen words, and they land on `dawn`/`dusk`, on the
+  "now" pill and on each other — Sydney does it with live data. The chart prints the
+  **time only**: a filled disc is a high, a hollow ring a low, and the legend and tiles
+  below say it in words (shape is never the only cue). Positions are computed before
+  painting, since the viewBox is 1:1 with the measured box.
+- A fixture that passes does not mean the rule passes. Every fixed fixture but Sydney
+  hid the collision above, so `chart-collide.js` sweeps the tide *phase*
+  (`MARINE[key].tide.highAt`) across the day instead of trusting one arrangement.
+
 ## Habits this repo has paid for
 
 - `node --check app.js water.js icons.js` before trusting a browser run. A `continue`
@@ -138,3 +155,6 @@ suite can run locally — **never tune it to make it pass**. Run it with
 | `first-load.js` | a first visit is clean: no console output, no network calls, no geolocation, empty state showing, both themes |
 | `icon-check.js`, `icon-see.js` | the marks themselves: "mainly clear" is mostly clear, the night moon sits behind the cloud. Ink share is confounded by sun rays — compare **cloud-only** ink, and use `icon-see.js`'s ASCII density maps to see it |
 | `live-check.js` | 10 real places (coastal and inland, other timezones) x 2 viewports against the **live** APIs: never NaN/undefined/null text, water section only where it belongs, verdicts inside the budget; prints the reasons so the copy can be read, not just asserted |
+| `chart-collide.js` | no two words in the tide chart overlap, no label leaves the box, and **every turn the app lists keeps its time on the chart** — sweeps the tide phase over the day x 2 themes, since one fixed fixture hides the collisions (Sydney's arrangement collides) |
+| `rail-hue.js` | the temperature rail reads cool when it is cool: cool buckets never in the olive/brown hue band, warm stays warm, all five buckets actually paint, rail >=3:1 on card and track, numbers >=4.5:1, and a day is coloured by the **printed** temperature |
+| `first-screen-read.js` | reads the above-the-fold text of a place in visual order, both themes, so the coastal copy and reading order can be reviewed like a screenshot |
