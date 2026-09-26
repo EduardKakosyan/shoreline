@@ -166,19 +166,19 @@
     },
     "water": {
       "top": 471,
-      "bottom": 1271,
+      "bottom": 1253,
       "w": 358,
-      "h": 800
+      "h": 782
     },
     "hourly": {
-      "top": 1283,
-      "bottom": 1473,
+      "top": 1265,
+      "bottom": 1456,
       "w": 358,
       "h": 190
     },
     "week": {
-      "top": 1485,
-      "bottom": 1971,
+      "top": 1468,
+      "bottom": 1953,
       "w": 358,
       "h": 485
     },
@@ -198,7 +198,7 @@
     },
     "reasons": {
       "beach": "Cool air, 11°C — leave it today.",
-      "fishing": "No clear tide turn today, so nothing to time around — worth an hour, not the day."
+      "fishing": "No tide turn to time the day around — worth an hour, not the day."
     },
     "tempPx": 82,
     "chart": {
@@ -432,19 +432,19 @@
     },
     "water": {
       "top": 471,
-      "bottom": 1271,
+      "bottom": 1253,
       "w": 358,
-      "h": 800
+      "h": 782
     },
     "hourly": {
-      "top": 1283,
-      "bottom": 1473,
+      "top": 1265,
+      "bottom": 1456,
       "w": 358,
       "h": 190
     },
     "week": {
-      "top": 1485,
-      "bottom": 1971,
+      "top": 1468,
+      "bottom": 1953,
       "w": 358,
       "h": 485
     },
@@ -464,7 +464,7 @@
     },
     "reasons": {
       "beach": "Cool air, 11°C — leave it today.",
-      "fishing": "No clear tide turn today, so nothing to time around — worth an hour, not the day."
+      "fishing": "No tide turn to time the day around — worth an hour, not the day."
     },
     "tempPx": 82,
     "chart": {
@@ -730,7 +730,7 @@
     },
     "reasons": {
       "beach": "Cool air, 11°C — leave it today.",
-      "fishing": "No clear tide turn today, so nothing to time around — worth an hour, not the day."
+      "fishing": "No tide turn to time the day around — worth an hour, not the day."
     },
     "tempPx": 108,
     "chart": {
@@ -996,7 +996,7 @@
     },
     "reasons": {
       "beach": "Cool air, 11°C — leave it today.",
-      "fishing": "No clear tide turn today, so nothing to time around — worth an hour, not the day."
+      "fishing": "No tide turn to time the day around — worth an hour, not the day."
     },
     "tempPx": 108,
     "chart": {

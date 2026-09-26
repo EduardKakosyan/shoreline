@@ -131,8 +131,17 @@ for (const key of Object.keys(MARINE)) {
     // brief: a non-Good rating must name the keyword of EVERY held-back factor
     check(`${key} beach holds named`, b.holds.every((h) => low(b.reason).includes(h)), true);
     check(`${key} fishing holds named`, f.holds.every((h) => low(f.reason).includes(h)), true);
+    // same keywords must survive the Fahrenheit rendering of the sentence
+    const bf = W.beachVerdict(m.inputs, 'F');
+    const ff = W.fishingVerdict(m.inputs, 'F');
+    check(`${key} beach rating (F)`, bf.rating, b.rating);
+    check(`${key} fishing rating (F)`, ff.rating, f.rating);
+    check(`${key} beach holds named (F)`, bf.holds.every((h) => low(bf.reason).includes(h)), true);
+    check(`${key} fishing holds named (F)`, ff.holds.every((h) => low(ff.reason).includes(h)), true);
+    for (const w of EXPECTED_OUTLOOK[key].fishingWords) check(`${key} fishing reason F "${w}"`, low(ff.reason).includes(w), true);
     console.log(`     beach: ${b.rating} — ${b.reason}`);
     console.log(`     fish : ${f.rating} — ${f.reason}`);
+    console.log(`     fishF: ${ff.rating} — ${ff.reason}`);
     console.log(`     best : ${W.bestTimes(m)}`);
   }
 }

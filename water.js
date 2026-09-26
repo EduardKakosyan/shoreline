@@ -155,17 +155,18 @@
   };
   const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
-  /* Reason wording stays on the Celsius reading — the numbers beside the words are
-     converted, the sentence is not. */
-  function beachVerdict(i) {
+  /* Reasons are re-derived per render so they always agree with the unit toggle:
+     the numbers in the sentence are the numbers printed beside them. Every held-back
+     factor keeps its contract keyword. */
+  function beachVerdict(i, units = "C") {
     const W = i.waveHeight;
     const V = i.wind;
     const P = i.precipMax;
     const C = i.code;
     const T = i.temp;
-    const wave = `${W === null ? "no" : Number(W).toFixed(1)} m waves`;
-    const breeze = V === null ? "no" : `${Math.round(V)} km/h`;
-    const cool = `cool air, ${T === null ? "cold" : Math.round(T)}°C`;
+    const wave = `${W === null ? "no" : lenText(W, units)} waves`;
+    const breeze = V === null ? "no" : windText(V, units);
+    const cool = `cool air, ${T === null ? "cold" : tempText(T, units, true)}`;
     const thunder = C !== null && THUNDER.indexOf(C) >= 0;
 
     const bad = [];
@@ -189,7 +190,7 @@
       return {
         rating: "Good",
         holds: [],
-        reason: `Small water (${W.toFixed(1)} m), a light ${breeze} breeze and clear skies — go.`,
+        reason: `Small water (${lenText(W, units)}), a light ${breeze} breeze and clear skies — go.`,
       };
     }
 
@@ -208,11 +209,11 @@
     };
   }
 
-  function fishingVerdict(i) {
+  function fishingVerdict(i, units = "C") {
     const W = i.waveHeight;
     const V = i.wind;
-    const wave = `${W === null ? "no" : Number(W).toFixed(1)} m waves`;
-    const breeze = V === null ? "no" : `${Math.round(V)} km/h`;
+    const wave = `${W === null ? "no" : lenText(W, units)} waves`;
+    const breeze = V === null ? "no" : windText(V, units);
     const thunder = i.code !== null && THUNDER.indexOf(i.code) >= 0;
 
     const bad = [];
@@ -246,9 +247,11 @@
     if (W === null || W >= 1.5) held.push(["waves", wave]);
     if (V === null || V >= 25) held.push(["wind", `a ${breeze} wind`]);
     if (!dawn.length && !dusk.length) {
+      /* A noun phrase, so it lists cleanly beside "2.2 m waves" rather than reading
+         as a second sentence bolted onto the list. */
       held.push(["tide", i.turns.length
-        ? `the tide turns at ${i.turns.map((t) => t.time).join(", ")}, not in low light`
-        : "no clear tide turn today, so nothing to time around"]);
+        ? `no tide turn in low light (${i.turns.map((t) => t.time).join(", ")})`
+        : "no tide turn to time the day around"]);
     }
     return {
       rating: "Fair",
@@ -527,11 +530,11 @@
   }
 
   function html(m) {
-    const v = {
-      beach: beachVerdict(m.inputs),
-      fishing: fishingVerdict(m.inputs),
-    };
     const units = m.units || "C";
+    const v = {
+      beach: beachVerdict(m.inputs, units),
+      fishing: fishingVerdict(m.inputs, units),
+    };
     const s = m.sea;
 
     const events = m.turns.length
