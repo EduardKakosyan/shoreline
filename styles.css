@@ -115,9 +115,12 @@
   /* Temperature gets one colour language, cold -> hot, deep enough to sit on a
      card and on its hover surface without washing out. Cool stays blue on both
      themes: a 14°C day must not read as earth or autumn. */
+  /* The week's temperature scale runs cool -> warm in hue, so a mild day (the
+     crossover) is a cool-neutral teal and never the olive/brown it used to be:
+     "cool" had to look cool. All five clear 4.5:1 on a card in both themes. */
   --temp-cold: #24599e;
   --temp-cool: #14639b;
-  --temp-mild: #6d520a;
+  --temp-mild: #1b7271;
   --temp-warm: #9c4413;
   --temp-hot: #932a2a;
   --rail-track: #ccd6e6;
@@ -218,7 +221,7 @@ html[data-theme="dark"] {
   /* daytime skies are re-tokened below (html[data-theme=dark] .hero…) */
   --temp-cold: #7fb2ff;
   --temp-cool: #6fc6e8;
-  --temp-mild: #ffd98a;
+  --temp-mild: #79cdbf;
   --temp-warm: #ffb27a;
   --temp-hot: #ff9ea3;
   --rail-track: #33415c;
@@ -872,6 +875,46 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
   .is-coastal .hero__chips .metric__icon {
     width: 13px;
     height: 13px;
+  }
+}
+
+/* Coastal phones spend their first screen on the verdicts, so everything above them
+   gives a little room back: the brand tag goes, the search takes one row, the kicker
+   line (a place the hero just named) is dropped and the disclaimer shares a line.
+   Nothing shrinks below its own legibility or tap-target floor. */
+@media (max-width: 619.98px) {
+  body.is-coastal .brand__tag {
+    display: none;
+  }
+  body.is-coastal .app-header {
+    padding-top: 12px;
+  }
+  /* The label stays visible — the brief asks for it — the field just gets tighter
+     padding, never below the 44px tap floor. */
+  body.is-coastal .search {
+    gap: 8px;
+  }
+  body.is-coastal .search__input {
+    padding-top: 11px;
+    padding-bottom: 11px;
+  }
+  body.is-coastal .search__actions {
+    gap: 8px;
+  }
+  body.is-coastal .search__submit {
+    padding: 11px 18px;
+  }
+  body.is-coastal .shell {
+    gap: 12px;
+  }
+  body.is-coastal .water__kicker {
+    display: none;
+  }
+  body.is-coastal .water {
+    gap: 8px;
+  }
+  body.is-coastal .water__disclaimer {
+    padding-top: 0;
   }
 }
 
@@ -1631,20 +1674,15 @@ html[data-theme="dark"] .empty-state {
   gap: 10px;
 }
 
-.water__head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 4px;
-  min-height: 26px;
-}
-
+/* The kicker names the place again under the hero; on a phone the hero has only
+   just said it, so the verdicts get the room instead. */
 .water__kicker {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-width: 0;
   margin: 0;
+  padding: 0 4px;
   font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -1657,19 +1695,22 @@ html[data-theme="dark"] .empty-state {
   flex: none;
 }
 
-.water__trendwrap {
-  margin: 0 0 0 auto;
+/* The trend reads as a Tide pill, and it rides in the tides header where it is read
+   against the curve. "Tide" sits outside the value so the pill says "Tide Rising". */
+.tide__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-/* The trend reads as a Tide pill; the word "Tide" sits outside the value so the
-   pill says "Tide Rising" rather than a bare verb. */
 .tide-trend {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  margin-left: auto;
   padding: 5px 11px 5px 8px;
   border-radius: var(--radius-pill);
-  background: var(--water-panel);
+  background: var(--water-panel-2);
   border: 1px solid var(--water-border);
   color: var(--water-ink);
   font-size: 0.75rem;
@@ -1692,9 +1733,9 @@ html[data-theme="dark"] .empty-state {
 .rating {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
-  padding: 11px 12px 12px;
+  padding: 10px 11px 11px;
   border-radius: var(--radius-sm);
   background: var(--rating-fair-bg);
   border: 1px solid var(--rating-fair-border);
@@ -1750,6 +1791,7 @@ html[data-theme="dark"] .empty-state {
 }
 
 .rating__word {
+  margin-top: 2px;
   font-size: 1.625rem;
   font-weight: 800;
   line-height: 1.05;

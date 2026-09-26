@@ -539,20 +539,23 @@
           .join("")
       : `<li class="tide-event tide-event--none">The hourly sea level stays flat today.</li>`;
 
+    /* The trend rides in the tides header, where it is read against the chart; the
+       phone gives that row the whole width and drops the kicker line, because the
+       hero above already says where we are. */
     const trendChip = `<span class="tide-trend">${Icons.waterIcon("tide", { size: 13 })}Tide <span data-testid="tide-trend">${esc(m.trend || "Steady")}</span></span>`;
 
     return `
-      <div class="water__head">
-        <p class="water__kicker">${Icons.waterIcon("wave", { size: 14 })} ${esc(m.place || "Today at the water")}</p>
-        <p class="water__trendwrap">${trendChip}</p>
-      </div>
+      <p class="water__kicker">${Icons.waterIcon("wave", { size: 14 })} ${esc(m.place || "Today at the water")}</p>
       <div class="ratings">
         ${ratingCard("beach", "Beach today", v.beach, "beach")}
         ${ratingCard("fishing", "Fishing today", v.fishing, "fish")}
       </div>
       <p class="water__disclaimer">An outlook from today's model data, not a promise — use your eyes once you're there.</p>
       <section class="water__panel tide">
-        <h3 class="water__subtitle">Tides today</h3>
+        <p class="tide__head">
+          <span class="water__subtitle">Tides today</span>
+          ${trendChip}
+        </p>
         <div class="tide-chart" data-testid="tide-chart"></div>
         <ul class="tide-events">${events}</ul>
         <p class="best-times">${esc(bestTimes(m))}</p>

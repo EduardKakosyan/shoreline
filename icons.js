@@ -43,8 +43,18 @@
     `<circle cx="${(cx - r * 0.3).toFixed(2)}" cy="${(cy - r * 0.28).toFixed(2)}" r="${(r * 0.24).toFixed(2)}" fill="var(--moon-crater, rgba(48,66,102,0.28))" stroke="none" />` +
     `<circle cx="${(cx + r * 0.34).toFixed(2)}" cy="${(cy + r * 0.34).toFixed(2)}" r="${(r * 0.16).toFixed(2)}" fill="var(--moon-crater, rgba(48,66,102,0.28))" stroke="none" />`;
 
-  const cloud = (path, opacity) =>
-    `<path d="${path}" fill="var(--ic-fill, currentColor)" fill-opacity="${opacity}" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />`;
+  /* `k` shrinks the cloud about its own bottom-right corner, so a small cloud can
+     hug that corner while the sun keeps the rest of the box. */
+  const cloud = (path, opacity, k, anchor) => {
+    if (!k || k === 1) {
+      return `<path d="${path}" fill="var(--ic-fill, currentColor)" fill-opacity="${opacity}" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />`;
+    }
+    const [ax, ay] = anchor || [18.3, 18.9];
+    return (
+      `<g transform="translate(${(ax * (1 - k)).toFixed(2)} ${(ay * (1 - k)).toFixed(2)}) scale(${k})" stroke-width="${(1.7 / k).toFixed(2)}">` +
+      `<path d="${path}" fill="var(--ic-fill, currentColor)" fill-opacity="${opacity}" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" /></g>`
+    );
+  };
 
   const drops = (n, y0, spread) => {
     const xs = n === 2 ? [9.8, 14.6] : n === 3 ? [8.6, 12, 15.4] : [7.6, 10.5, 13.5, 16.4];
@@ -69,13 +79,16 @@
     "clear-day": () => sun(12, 12, 4.6),
     "clear-night": () => moon(13.2, 12, 5.4),
 
-    /* 1 "Mainly clear" — mostly sky: a big crescent/sun with one small wisp low down. */
-    "mainly-day": () => sun(10, 9.4, 4.4) + cloud(wispPath, 0.12),
-    "mainly-night": () => moon(10.2, 10.4, 6) + cloud(wispPath, 0.12),
+    /* 1 "Mainly clear" — mostly sky. The body is a small cloud pinned to the
+       bottom-right corner at ~60% size, so the sun/crescent keeps the box. Half the
+       ink of "partly cloudy" is the point: the reviewer read two identical marks
+       where one had to say "mostly clear". */
+    "mainly-day": () => sun(11.4, 10.6, 4.1) + cloud(wispPath, 0.12, 0.68),
+    "mainly-night": () => moon(11.4, 10.6, 5.6) + cloud(wispPath, 0.12, 0.68),
 
     /* 2 "Partly cloudy" — the mark sits *behind* the cloud. */
     "partly-day": () => sun(8.4, 7.6, 3.1) + cloud(cloudPath, 0.14),
-    "partly-night": () => moonDisc(9.6, 8.2, 3.5) + cloud(cloudPath, 0.14),
+    "partly-night": () => moonDisc(8.6, 7.2, 4.4) + cloud(cloudPath, 0.14),
 
     cloudy: () => cloud(cloudPath, 0.14),
     cloudyAlt: () =>
