@@ -1,8 +1,10 @@
-# Weather Now — repository notes
+# Shoreline — repository notes
 
-Static, dependency-free app: `index.html` + `styles.css` + `icons.js` + `app.js`,
-served as-is by `tools/serve.js` on port 3000 (`GET /` returns the app). No build
-step, no framework, no runtime CDN. The browser calls Open-Meteo directly.
+Static, dependency-free app (`index.html` + `styles.css` + `icons.js` + `water.js` +
+`app.js`): a companion for a day at the water — beach/fishing verdicts, tides, sea state
+and moon for coastal places, and the weather app it was for everywhere else. Served
+as-is by `tools/serve.js` on port 3000 (`GET /` returns the app). No build step, no
+framework, no runtime CDN. The browser calls Open-Meteo directly.
 
 `checks/` is a copy of the acceptance suite (from `/brief/checks`) kept only so the
 suite can run locally — **never tune it to make it pass**. Run it with
@@ -59,6 +61,61 @@ suite can run locally — **never tune it to make it pass**. Run it with
 - Live Open-Meteo reports `current.time` at 15-minute marks while the hourly series
   steps on the hour; the strip snaps to the hour the reading belongs to. Fixtures always
   align exactly, so the suite cannot catch this — `node audit/live-check.js` covers it.
+- **`checks/` must stay byte-identical to `/brief/checks`.** Check with
+  `diff -rq /brief/checks checks` before believing any green run — a softened local copy
+  proves nothing.
+- **Coastal vs inland is decided by the marine answer**, not by the place name: coastal
+  only when `current.wave_height` is a number. Inland answers HTTP 200 with nulls, and
+  the water section is then absent with no message. A marine failure while the forecast
+  succeeds shows only the `marine-unavailable` note.
+- The coastal phone layout is **CSS only**, keyed on `body.is-coastal` inside
+  `@media (max-width: 619.98px)`. JS once picked the layout by measuring the viewport, so
+  a unit/theme re-render could disagree with the actual width. One markup path means it
+  can't.
+- **The first-screen budget on a 390x844 coastal phone** is a real constraint, not a
+  preference: both verdict words must end above 844px, and the tide chart's bottom edge —
+  where the hour labels and the "now" pill live — must too, or the chart loses the part
+  that answers "when". `audit/water-lint.js` asserts both. The room came from control
+  heights (54→46px, still above the 44px tap floor), paddings and gaps — **not** from
+  squeezing the search field: a 149px field truncates "Search a beach, harbour or city"
+  (it needs 303px), and that placeholder is the app's invitation. Measured in the browser,
+  not estimated: `audit/water-lint.js` prints chart cut/fold share.
+- The verdict **reasons are re-derived per render, in the active unit**, because a
+  Fahrenheit reader otherwise gets metres and km/h inside the sentence while every number
+  beside it converts. Ratings and contract keywords are unaffected by units, and
+  `audit/water-rules.js` asserts the keyword rule in **both** units.
+- The tide chart is painted in a second pass into a viewBox equal to its **own client
+  box** and repainted via `ResizeObserver`: `preserveAspectRatio="none"` on a fixed
+  viewBox stretched the text and the stroke weight. Repaint only on a real width change,
+  or text selection breaks. A dead-flat series (real at some model points) is centred
+  rather than auto-scaled, or the line pins to the floor of the box and "flat" looks like
+  a wall.
+- The `tide-trend` text must be exactly `Rising`/`Falling`, so the pill reads
+  "Tide" outside the test id and the value inside it.
+- Do **not** hide the `City` label to buy vertical space on a coastal phone: the contract
+  asks for one visible label. Space came from paddings, control heights and dropping the
+  brand tag / kicker instead.
+- The weather contract's checks measure text by walking up to the first opaque
+  background, so keep the label visible and never dim text with `opacity`.
+- When two first-screen invariants contradict (inland: whole hour strip on a laptop;
+  coastal: both verdicts), assert them **per reading** rather than deleting the older
+  one. `audit/stub.js` grew an `inland` option that answers the marine API with 200 +
+  nulls for a coastal fixture key, so `look.js` can drive both readings of one city.
+
+## Habits this repo has paid for
+
+- `node --check app.js water.js icons.js` before trusting a browser run. A `continue`
+  inside `forEach` is a SyntaxError that killed app.js once and dropped the suite to 6
+  passing tests while everything "looked" fine.
+- Verify a stub patch before believing a screenshot: grep for the route and assert a
+  fixture value comes back. A python string replace that silently no-opped once sent the
+  audit's marine requests to the real internet, so inland Paris appeared coastal.
+- Gate "is it visible" on `width > 0`: a `display:none` element measures 0x0 and once
+  reported a false problem for inland Paris.
+- Judge a shape claim by measurement of the right thing (cloud-only ink), not a proxy
+  (total ink share).
+- The demo is served with `start_demo` on port 3000 (`node tools/serve.js`); check
+  `curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/` before starting another.
 
 ## My harnesses (`audit/`, scaffolding, not part of the app)
 
@@ -74,4 +131,10 @@ suite can run locally — **never tune it to make it pass**. Run it with
 | `live-check.js` | the **real** Open-Meteo API, no interception |
 | `geometry.js`, `polish.js` | element geometry/type scale; contrast headroom (not just pass/fail) |
 | `hero-marks.js` | nothing painted above/around the hero mark, per pixel, both themes x 12 skies |
-| `look.js` | **what a person sees on first load**: viewport-only screenshots at 390x844 and 1280x800 per scene x theme; fails if the hour strip is not fully visible on a laptop's first screen, or if the hero's reading row leaves >24px unused on the right |
+| `look.js` | **what a person sees on first load**, per scene x theme x **inland/coastal** reading: inland must show no water section and keep the whole hour strip on a laptop; coastal must show both verdicts whole inside the first screen. Verdict boxes are measured unrounded — rounding y and bottom separately reads a 3% fold cut on a 32px word that does not exist |
+| `water-rules.js` | every rule in the brief (turns, trend, ratings, keyword-bearing reasons in **both units**, sea-state formats, moon, inland/no-marine/flat-sea) driven straight against the fixture data. The fastest loop here — run it before the browser |
+| `water-look.js` | first-screen budget + chart fidelity + console errors per coastal fixture x theme x viewport; writes `audit/water-*.png` and `water.json` |
+| `water-lint.js` | composition inside the water section: twin verdict cards, tidy tiles, no clipped text, curve spans/rises, radii scale, **and that the fold does not cut the tide chart** |
+| `first-load.js` | a first visit is clean: no console output, no network calls, no geolocation, empty state showing, both themes |
+| `icon-check.js`, `icon-see.js` | the marks themselves: "mainly clear" is mostly clear, the night moon sits behind the cloud. Ink share is confounded by sun rays — compare **cloud-only** ink, and use `icon-see.js`'s ASCII density maps to see it |
+| `live-check.js` | 10 real places (coastal and inland, other timezones) x 2 viewports against the **live** APIs: never NaN/undefined/null text, water section only where it belongs, verdicts inside the budget; prints the reasons so the copy can be read, not just asserted |
