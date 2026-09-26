@@ -44,6 +44,21 @@ const MEASURE = `(() => {
   }
   const spill = texts.filter((t) => t.x < hb.x - 1 || t.right > hb.right + 1 || t.y < hb.y - 1 || t.bottom > hb.bottom + 1)
     .map((t) => t.s + ' outside the chart box');
+  /* high is a solid disc, low a ring of the panel's own colour: if those two ever
+     paint the same, the chart silently stops distinguishing them and the one-word
+     label layout stops working. */
+  const markOf = (kind) => {
+    const g = svg.querySelector('g.tc-turn--' + kind);
+    if (!g) return null;
+    const c = g.querySelector('circle');
+    const cs = getComputedStyle(c);
+    const bb = c.getBoundingClientRect();
+    return { fill: cs.fill, stroke: cs.stroke, d: Math.round(bb.width * 10) / 10 };
+  };
+  const hi = markOf('high');
+  const lo = markOf('low');
+  const legend = !!document.querySelector('.tide-legend');
+
   /* every turn the app reports must be readable on the chart, not just dotted */
   const turnDots = [...svg.querySelectorAll('g.tc-turn')];
   const turnTimes = turnDots.map((g) => (g.querySelector('text') || {}).textContent || '');
@@ -56,6 +71,8 @@ const MEASURE = `(() => {
     spill,
     missing: tileTimes.filter((t) => !turnTimes.includes(t)),
     turns: turnDots.length,
+    hi, lo, legend,
+    panel: getComputedStyle(host).backgroundColor,
     curveW: lb ? Math.round(lb.width) : 0,
     hostW: Math.round(hb.width),
   };
@@ -101,6 +118,15 @@ const MEASURE = `(() => {
         r.overlaps.forEach((o) => problems.push(`${place} phase ${phase} ${theme}: ${o}`));
         r.spill.forEach((s) => problems.push(`${place} phase ${phase} ${theme}: ${s}`));
         r.missing.forEach((t) => problems.push(`${place} phase ${phase} ${theme}: turn ${t} has no time on the chart`));
+        if (r.turns > 0) {
+          if (!r.hi || !r.lo) problems.push(`${place} phase ${phase} ${theme}: no high or low mark to distinguish`);
+          else {
+            if (r.hi.fill === r.lo.fill) problems.push(`${place} phase ${phase} ${theme}: high and low paint the same fill (${r.hi.fill}) — the disc/ring distinction is gone`);
+            if (r.lo.fill === r.panel && r.hi.fill === r.panel) problems.push(`${place} phase ${phase} ${theme}: both marks match the panel`);
+            if (r.hi.d <= r.lo.d) problems.push(`${place} phase ${phase} ${theme}: a high is not drawn larger than a low (${r.hi.d} vs ${r.lo.d})`);
+          }
+          if (!r.legend) problems.push(`${place} phase ${phase} ${theme}: turns shown with no legend to decode the marks`);
+        }
         if (r.words < 3) problems.push(`${place} phase ${phase} ${theme}: only ${r.words} words in the chart`);
         lines.push(
           `${place}/${String(phase).padStart(2, '0')}h ${theme}: ${r.words} words, ${r.overlaps.length} overlap(s), curve ${r.curveW}/${r.hostW}px`,
