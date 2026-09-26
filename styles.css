@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Weather Now — tokens
+   Shoreline — tokens
    Every colour that sits behind text is opaque and measured, not eyeballed:
    gradients only ever combine stops that keep body text at >=4.5:1.
    ========================================================================== */
@@ -853,28 +853,38 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
     margin-top: 6px;
     font-size: 0.875rem;
   }
+  /* One column of sideways metrics beside the temperature. Two columns of stacked
+     metrics pushed the temperature block down to ~96px, where "Mainly clear" wrapped
+     to two lines and the feels-like line wrapped too — a squeezed hero, not a band. */
   .is-coastal .hero__chips {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    flex: 0 1 auto;
+    grid-template-columns: minmax(0, 1fr);
+    flex: 0 0 138px;
     min-width: 0;
-    gap: 6px;
+    gap: 4px;
   }
   .is-coastal .hero__chips .metric {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
     min-height: 0;
-    padding: 6px 9px;
-    gap: 1px;
+    padding: 3px 8px;
+    gap: 4px;
     border-radius: var(--radius-xs);
+  }
+  .is-coastal .hero__chips .metric__heading {
+    gap: 3px;
   }
   .is-coastal .hero__chips .metric__label {
     font-size: 0.5625rem;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
   }
   .is-coastal .hero__chips .metric__value {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
   }
   .is-coastal .hero__chips .metric__icon {
-    width: 13px;
-    height: 13px;
+    width: 12px;
+    height: 12px;
   }
 }
 
@@ -890,8 +900,12 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
     padding-top: 12px;
   }
   /* The label stays visible — the brief asks for it — the field just gets tighter
-     padding, never below the 44px tap floor. */
+     padding, never below the 44px tap floor, and the whole form takes one row: the
+     verdicts below are what the first screen of a coastal place is for. */
   body.is-coastal .search {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
     gap: 8px;
   }
   body.is-coastal .search__input {
@@ -902,7 +916,7 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
     gap: 8px;
   }
   body.is-coastal .search__submit {
-    padding: 11px 18px;
+    padding: 11px 14px;
   }
   body.is-coastal .shell {
     gap: 12px;

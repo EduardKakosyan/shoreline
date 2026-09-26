@@ -24,6 +24,7 @@ run "pixel review" python3 audit/pixel-review.py
 run "design lint" node audit/design-lint.js
 run "width sweep" node audit/widths.js
 run "keyboard audit" node audit/keyboard.js
+run "clean initial load" node audit/first-load.js
 run "recents order stress" node audit/order-stress.js
 run "hourly strip invariants" node audit/hourly.js
 run "hero mark carries no stray paint" node audit/hero-marks.js
