@@ -284,92 +284,19 @@
     </div>`;
   }
 
-  /* Weather texture lives inside the hero's sky window (the badge behind the icon)
-     and nowhere else on the card. Discrete shapes scattered behind text read as
-     dust on the screen, so the window clips everything: a star can only ever be a
-     star in the sky, never inside a city name. All of it is inline SVG, which the
-     contrast sampler cannot see, so translucent decoration is free. */
-  const WINDOW = 100;
 
-  const stars = (n, o) =>
-    '<g class="hero__stars">' +
-    Array.from({ length: n }, (_, i) => {
-      const x = 10 + ((i * 37) % 82);
-      const y = 9 + ((i * 23) % 22);
-      return `<circle cx="${x}" cy="${y}" r="${(0.9 + (i % 3) * 0.45).toFixed(1)}" fill="#eef4ff" opacity="${o}"/>`;
-    }).join("") +
-    "</g>";
-
-  const haze = (cx, cy, r, o) =>
-    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--sky-glow)" opacity="${o}"/>`;
-
-  const streaks = (n, o) =>
-    '<g class="sky-rain">' +
-    Array.from({ length: n }, (_, i) => {
-      const x = 16 + ((i * 29) % 74);
-      const y = 54 + ((i * 17) % 32);
-      return `<line x1="${x}" y1="${y}" x2="${x - 4}" y2="${y + 12}" stroke="var(--sky-glow)" stroke-width="2.2" stroke-linecap="round" opacity="${o}"/>`;
-    }).join("") +
-    "</g>";
-
-  const snowDots = (n, o) =>
-    '<g class="sky-snow">' +
-    Array.from({ length: n }, (_, i) => {
-      const x = 14 + ((i * 41) % 76);
-      const y = 50 + ((i * 27) % 40);
-      return `<circle cx="${x}" cy="${y}" r="${(1.1 + (i % 3) * 0.7).toFixed(1)}" fill="var(--sky-glow)" opacity="${o}"/>`;
-    }).join("") +
-    "</g>";
-
-  const fogBands = (o) =>
-    '<g class="sky-fog">' +
-    Array.from({ length: 4 }, (_, i) => {
-      const y = 20 + i * 20;
-      const h = 6 + (i % 2) * 3;
-      const inset = i % 2 ? 4 : 14;
-      return `<rect x="${inset}" y="${y}" width="${WINDOW - inset * 2}" height="${h}" rx="${h / 2}" fill="var(--sky-glow)" opacity="${o + (i % 2) * 0.06}"/>`;
-    }).join("") +
-    "</g>";
-
-  const SKY_TEXTURE = {
-    clear: (night) => haze(50, 46, 44, night ? 0.12 : 0.26) + haze(50, 46, 26, night ? 0.1 : 0.2),
-    cloudy: (night) =>
-      `<ellipse cx="30" cy="24" rx="44" ry="16" fill="var(--sky-glow)" opacity="${night ? 0.1 : 0.2}"/>` +
-      `<ellipse cx="74" cy="76" rx="40" ry="15" fill="var(--sky-shade)" opacity="${night ? 0.16 : 0.1}"/>`,
-    rain: (night) => streaks(7, night ? 0.4 : 0.6),
-    snow: (night) => snowDots(11, night ? 0.5 : 0.75),
-    fog: (night) => fogBands(night ? 0.16 : 0.22),
-    thunder: (night) =>
-      `<path d="M58 22l-16 26h11l-6 30 21-34H56l8-22z" fill="var(--sky-glow)" opacity="${night ? 0.34 : 0.5}"/>`,
-  };
-
-  function textureMarkup(scene) {
-    const fam = scene.split("-")[0];
-    const night = scene.endsWith("night");
-    const decor = (SKY_TEXTURE[fam] || SKY_TEXTURE.cloudy)(night);
-    const starfield = night ? stars(7, 0.8) : "";
-    return `<svg class="hero__texture" viewBox="0 0 ${WINDOW} ${WINDOW}" preserveAspectRatio="none" aria-hidden="true" focusable="false">${decor}${starfield}</svg>`;
-  }
-
-  /* A weather mark's colour follows the surface it sits on, not the page theme:
-     a light sky takes a warm sun, a deep sky (night, or any card in the dark
-     theme) takes a bright one. */
+  /* The hero carries no decoration around its weather mark: a haze bloom, a fog
+     band, a rain streak or a star painted near it all read as smudges or dashes
+     rather than as weather, and a reviewer said so twice. The sky gradient, the
+     mark and the condition text carry the condition between them. */
   const deepInk = (overDeep) => (overDeep ? " icon--deep" : "");
   const themeIsDark = () => document.documentElement.dataset.theme === "dark";
 
-  /* The hero's icon tile is a window into the sky: the condition's texture is
-     clipped inside it and nowhere else on the card, so decoration can never
-     drift over the words. It carries no paint of its own — a translucent tile
-     over the hero sky reads as a dark sliver under the tile's top edge. */
   function heroIcon(code, isDay, scene) {
-    const night = scene.endsWith("night");
     /* In the dark theme every sky reads deeper, so the mark there always takes
        the bright set; in the light theme only a night sky does. */
-    const deep = themeIsDark() || night;
-    return `<span class="hero__icon${deep ? " icon--deep" : ""}">
-      ${textureMarkup(scene)}
-      ${Icons.weatherIcon(code, isDay, { size: 70 })}
-    </span>`;
+    const deep = themeIsDark() || scene.endsWith("night");
+    return `<span class="hero__icon${deep ? " icon--deep" : ""}">${Icons.weatherIcon(code, isDay, { size: 70 })}</span>`;
   }
 
   function renderWeather(data) {

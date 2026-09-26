@@ -99,22 +99,21 @@ def main():
             if d < 30:
                 issues.append(f"{theme}: hero does not separate from the page in the viewport (distance {d})")
 
-    # day and night skies must look different
-    pairs = [
-        ("clear-day", "clear-night"),
-        ("cloudy-day", "cloudy-night"),
-        ("rain-day", "rain-night"),
-        ("snow-day", "snow-night"),
-        ("fog-day", "fog-night"),
-        ("thunder-day", "thunder-night"),
-    ]
-    for a, b in pairs:
-        ia, ib = imgs.get(f"scene-{a}.png"), imgs.get(f"scene-{b}.png")
-        if ia and ib:
+    # day and night skies must look different, in both themes: the dark theme's
+    # daytime skies are lifted only as far as its ink contrast allows, and a
+    # reviewer could not tell an overcast day from a night there by lightness
+    # alone until the two groups were pulled apart.
+    for fam in ("clear", "cloudy", "rain", "snow", "fog", "thunder"):
+        for suffix, label, floor in (("", "", 30), ("-dark", " [dark]", 20)):
+            ia = imgs.get(f"scene-{fam}-day{suffix}.png")
+            ib = imgs.get(f"scene-{fam}-night{suffix}.png")
+            if not (ia and ib):
+                issues.append(f"missing scene-{fam}-day{suffix}.png / scene-{fam}-night{suffix}.png")
+                continue
             d = dist(region(ia, 0.1, 0.25, 0.9, 0.4), region(ib, 0.1, 0.25, 0.9, 0.4))
-            print(f"scene {a} vs {b}: distance {d}")
-            if d < 30:
-                issues.append(f"night variant {b} does not differ from {a} (distance {d})")
+            print(f"scene {fam}-day vs {fam}-night{label}: distance {d} (floor {floor})")
+            if d < floor:
+                issues.append(f"night {fam}-night{label} does not differ from its day (distance {d})")
 
     if issues:
         print("\nISSUES:")

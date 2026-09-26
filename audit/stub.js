@@ -11,6 +11,8 @@ const MATCHES = {
   madrid: { name: 'Madrid', admin1: 'Community of Madrid', country: 'Spain', lat: 40.4165, lon: -3.7026 },
   lisbon: { name: 'Lisbon', admin1: 'Lisbon District', country: 'Portugal', lat: 38.71667, lon: -9.13333 },
   cairo: { name: 'Cairo', admin1: 'Cairo Governorate', country: 'Egypt', lat: 30.0601, lon: 31.2466 },
+  honolulu: { name: 'Honolulu', admin1: 'Hawaii', country: 'United States', lat: 21.30694, lon: -157.85834 },
+  tokyo: { name: 'Tokyo', admin1: 'Tokyo', country: 'Japan', lat: 35.6895, lon: 139.69171 },
 };
 
 const CITIES = {
@@ -24,6 +26,8 @@ const CITIES = {
   sydney: { lat: -33.86785, lon: 151.20732, current: { temperature_2m: 13.7, relative_humidity_2m: 78, weather_code: 45, wind_speed_10m: 19.2 }, daily: { weather_code: [45, 48, 3, 53, 1], temperature_2m_max: [15.4, 16.9, 18.1, 17.0, 14.2], temperature_2m_min: [8.6, 10.2, 11.7, 12.4, 9.9] } },
   madrid: { lat: 40.4165, lon: -3.7026, current: { temperature_2m: 31.2, relative_humidity_2m: 27, weather_code: 0, wind_speed_10m: 15.7 }, daily: { weather_code: [0, 1, 0, 2, 3], temperature_2m_max: [33.5, 31.8, 30.2, 27.9, 26.4], temperature_2m_min: [18.6, 17.9, 16.5, 15.8, 16.2] } },
   lisbon: { lat: 38.71667, lon: -9.13333, current: { temperature_2m: 24.6, relative_humidity_2m: 62, weather_code: 1, wind_speed_10m: 21.4 }, daily: { weather_code: [1, 2, 45, 53, 61], temperature_2m_max: [25.8, 24.3, 23.1, 22.6, 21.9], temperature_2m_min: [17.4, 18.1, 17.6, 18.9, 16.4] } },
+  honolulu: { lat: 21.30694, lon: -157.85834, current: { temperature_2m: 27.2, relative_humidity_2m: 74, weather_code: 3, wind_speed_10m: 16.4 }, daily: { weather_code: [3, 3, 2, 51, 1], temperature_2m_max: [28.4, 28.9, 29.4, 27.6, 28.1], temperature_2m_min: [22.4, 23.1, 22.6, 21.9, 22.2] } },
+  tokyo: { lat: 35.6895, lon: 139.69171, current: { temperature_2m: 18.4, relative_humidity_2m: 82, weather_code: 63, wind_speed_10m: 13.2 }, daily: { weather_code: [63, 61, 3, 2, 0], temperature_2m_max: [19.2, 20.4, 22.1, 23.6, 24.8], temperature_2m_min: [14.1, 14.9, 15.2, 14.4, 13.6] } },
   cairo: { lat: 30.0601, lon: 31.2466, current: { temperature_2m: 36.8, relative_humidity_2m: 19, weather_code: 0, wind_speed_10m: 7.8 }, daily: { weather_code: [0, 0, 0, 1, 2], temperature_2m_max: [38.4, 39.1, 37.6, 36.2, 35.0], temperature_2m_min: [24.7, 25.3, 24.1, 23.6, 22.9] } },
 };
 

@@ -100,9 +100,11 @@ function judge(label, res) {
       }
       const res = await page.evaluate(`${AUDIT}\n;auditPage(${JSON.stringify(OPTS)})`);
       judge(`${theme}/results/hero=${scene}`, res);
-      if (theme === 'light') {
+      {
         const card = page.locator('.hero');
-        await card.screenshot({ path: `audit/scene-${scene}.png` });
+        await card.screenshot({
+          path: `audit/scene-${scene}${theme === 'dark' ? '-dark' : ''}.png`,
+        });
       }
       await context.close();
     }

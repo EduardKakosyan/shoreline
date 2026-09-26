@@ -60,7 +60,7 @@
   --hero-snow-day-3: #b3cfe8;
   --hero-snow-night-1: #12202f;
   --hero-snow-night-2: #1d3145;
-  --hero-snow-night-3: #2f4b63;
+  --hero-snow-night-3: #2a4459;
 
   --hero-fog-day-1: #e9eef5;
   --hero-fog-day-2: #cfd8e3;
@@ -305,35 +305,6 @@ svg {
   html[data-theme="dark"] .sk::after {
     background-image: linear-gradient(90deg, #ffffff00, #ffffff17, #ffffff00);
   }
-  .hero__texture .hero__stars {
-    animation: twinkle 4.5s var(--ease) infinite alternate;
-  }
-  /* Sky life: transform-only, on decorative SVG groups, so nothing that text is
-     sampled against ever sits at partial opacity or shifts layout. */
-  .hero__texture .sky-fog {
-    animation: fog-drift 24s var(--ease) infinite alternate;
-  }
-  .hero__texture .sky-rain {
-    animation: sky-bob 2.2s ease-in-out infinite alternate;
-  }
-  .hero__texture .sky-snow {
-    animation: snow-sway 7s ease-in-out infinite alternate;
-  }
-}
-
-@keyframes fog-drift {
-  from { transform: translateX(-9px); }
-  to { transform: translateX(9px); }
-}
-
-@keyframes sky-bob {
-  from { transform: translate(0, -3px); }
-  to { transform: translate(-4px, 3px); }
-}
-
-@keyframes snow-sway {
-  from { transform: translate(-5px, -2px); }
-  to { transform: translate(5px, 3px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -356,11 +327,6 @@ svg {
 
 @keyframes shimmer {
   100% { transform: translateX(100%); }
-}
-
-@keyframes twinkle {
-  from { opacity: 0.5; }
-  to { opacity: 1; }
 }
 
 /* ==========================================================================
@@ -641,12 +607,16 @@ html[data-theme="dark"] .hero[data-scene$="day"] {
   color: var(--hero-text-night);
   border-color: rgba(0, 0, 0, 0.45);
 }
-html[data-theme="dark"] .hero[data-scene="clear-day"]   { --hero-1: #142137; --hero-2: #243250; --hero-3: #663d11; --hero-solid: #243250; }
-html[data-theme="dark"] .hero[data-scene="cloudy-day"]  { --hero-1: #1d2735; --hero-2: #293447; --hero-3: #374558; --hero-solid: #293447; }
-html[data-theme="dark"] .hero[data-scene="rain-day"]    { --hero-1: #0e1d2e; --hero-2: #172c42; --hero-3: #26495a; --hero-solid: #172c42; }
-html[data-theme="dark"] .hero[data-scene="snow-day"]    { --hero-1: #141f2a; --hero-2: #1f323d; --hero-3: #2b4859; --hero-solid: #1f323d; }
-html[data-theme="dark"] .hero[data-scene="fog-day"]     { --hero-1: #1e222a; --hero-2: #2a2f39; --hero-3: #41485a; --hero-solid: #2a2f39; }
-html[data-theme="dark"] .hero[data-scene="thunder-day"] { --hero-1: #17122f; --hero-2: #251e45; --hero-3: #3d2b6e; --hero-solid: #251e45; }
+/* The lightness ceiling here is the muted hero ink (#c3d3ec at 6:1 = luminance
+   .0620), so no stop may be lighter than ~#404755. Daytime is lifted as far as
+   that allows and the night tokens pushed the other way, because a day sky and a
+   night sky at the same luminance are only told apart by a small "NIGHT" label. */
+html[data-theme="dark"] .hero[data-scene="clear-day"]   { --hero-1: #1d2c48; --hero-2: #2c4364; --hero-3: #57431f; --hero-solid: #2c4364; }
+html[data-theme="dark"] .hero[data-scene="cloudy-day"]  { --hero-1: #2c3240; --hero-2: #383f4e; --hero-3: #3d4756; --hero-solid: #383f4e; }
+html[data-theme="dark"] .hero[data-scene="rain-day"]    { --hero-1: #1f3250; --hero-2: #2b4455; --hero-3: #2d4760; --hero-solid: #2b4455; }
+html[data-theme="dark"] .hero[data-scene="snow-day"]    { --hero-1: #233340; --hero-2: #31444e; --hero-3: #334956; --hero-solid: #31444e; }
+html[data-theme="dark"] .hero[data-scene="fog-day"]     { --hero-1: #292c34; --hero-2: #3b3f49; --hero-3: #3f4754; --hero-solid: #3b3f49; }
+html[data-theme="dark"] .hero[data-scene="thunder-day"] { --hero-1: #251f42; --hero-2: #39335a; --hero-3: #42406d; --hero-solid: #39335a; }
 html[data-theme="dark"] .hero[data-scene$="day"] .hero__eyebrow,
 html[data-theme="dark"] .hero[data-scene$="day"] .feels-line {
   color: var(--hero-muted-night);
@@ -669,26 +639,6 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
 .hero[data-scene="fog-night"]     { --hero-1: var(--hero-fog-night-1); --hero-2: var(--hero-fog-night-2); --hero-3: var(--hero-fog-night-3); --hero-solid: var(--hero-fog-night-2); }
 .hero[data-scene="thunder-day"]   { --hero-1: var(--hero-thunder-day-1); --hero-2: var(--hero-thunder-day-2); --hero-3: var(--hero-thunder-day-3); --hero-solid: var(--hero-thunder-day-2); }
 .hero[data-scene="thunder-night"] { --hero-1: var(--hero-thunder-night-1); --hero-2: var(--hero-thunder-night-2); --hero-3: var(--hero-thunder-night-3); --hero-solid: var(--hero-thunder-night-2); }
-
-/* The sky's texture is clipped to the icon's own window, never painted across
-   the card: decoration that drifts behind text reads as dust on the screen. */
-.hero__texture {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.hero[data-scene$="day"] {
-  --sky-glow: #ffffff;
-  --sky-shade: #0b1533;
-}
-.hero[data-scene$="night"] {
-  --sky-glow: #a8c8ff;
-  --sky-shade: #03060d;
-}
 
 .hero__top {
   display: flex;
@@ -723,35 +673,22 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
   overflow-wrap: anywhere;
 }
 
-/* The icon sits in its own patch of sky: a rounded window with the weather's
-   texture inside it, clipped so nothing escapes onto the words. */
+/* The weather mark, nothing else. Every attempt to paint something around it -
+   a tile, a hairline, a haze bloom, a fog band, a star - read to a reviewer as a
+   smudge or a rendering glitch, so the mark stands alone on the sky.
+   audit/hero-marks.js fails if anything is drawn there again. */
 .hero__icon {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
   flex: none;
   width: 78px;
   height: 78px;
-  border-radius: var(--radius-sm);
   display: grid;
   place-items: center;
-  /* No fill and no hairline of its own: a translucent tile over the hero sky
-     sits measurably darker than the sky around it, capped by a light hairline —
-     a bright line over a dark band that reads as a rendering glitch on the top
-     edge. The window is defined by its clipped sky texture alone. */
-  background: none;
-  border: 0;
   --icon-accent: var(--icon-accent-hero-day);
   --sun-core: var(--sun-core-hero-day);
   --sun-ray: var(--sun-ray-hero-day);
   --sun-rim: var(--sun-rim-hero-day);
   --sun-glow: var(--sun-glow-hero-day);
   --bolt-fill: var(--bolt-fill-hero);
-}
-
-.hero__icon > svg {
-  position: relative;
-  z-index: 1;
 }
 
 .hero[data-scene$="night"] .hero__icon,

@@ -13,10 +13,11 @@ suite can run locally — **never tune it to make it pass**. Run it with
 
 - **Contrast/coverage math**: `checks/visual.ts` walks up from an element to the first
   opaque background, treating **every CSS gradient colour stop as a candidate** and
-  keeping the worst ratio. Complementary trick used here: all decorative paint (hero
-  skies, stars, rain/snow/fog bands, spark/range bars) is **inline SVG**, invisible to
-  that math, so decoration can never fail contrast or coverage. Never paint a
-  gradient onto a DOM element that text sits on.
+  keeping the worst ratio. Complementary trick used here: decorative paint (the
+  day-range bars, the icons) is **inline SVG**, invisible to that math, so it can
+  never fail contrast or coverage. Never paint a gradient onto a DOM element that
+  text sits on — the hero's sky is the one exception, and it pays for it with the
+  per-stop contrast ceiling described below.
 - **Never dim text with `opacity`/`rgba` text colour.** The checker composites partial
   alpha into the foreground and reads a washed-out ratio (this measured 1.22:1 once).
   Build hierarchy from size/weight only. Entrance animations are transform-only.
@@ -29,10 +30,20 @@ suite can run locally — **never tune it to make it pass**. Run it with
 - Hour items must stay **non-interactive** (`div`, not `button`) to be exempt from the
   44px rule; the `hour-label` text must be exactly the `HH:00` slice, so the "Now" /
   "Tomorrow" affordances live in a separate `aria-hidden` slot.
-- The hero icon tile carries **no fill and no border of its own**. A translucent
-  dark veil over the hero sky measured ~15% darker than the surrounding sky and,
-  capped by a light 1px hairline, read as a rendering glitch on its top edge (the
-  operator's "dark sliver"). The window is defined by its clipped sky texture only.
+- **Nothing is painted around the hero's weather mark.** No tile, no fill, no
+  hairline, no haze bloom, no fog band, no star, no clipped sky texture. Each of
+  those was read by a reviewer as a grey smudge, a row of dashes, or a rendering
+  glitch above the icon - three review rounds, the same complaint. The sky
+  gradient + the mark + the condition text carry the condition between them.
+  `audit/hero-marks.js` screenshots each hero and compares every sky pixel near
+  the mark against the card's own CSS gradient evaluated analytically (worst
+  departure 1/255 clean; an injected 1px hairline reads 126), so a stray mark
+  cannot come back unnoticed.
+- Dark-theme **daytime** skies are lifted as far as the hero ink allows, and the
+  night tokens sit well below them. The ceiling is `--hero-muted-night`
+  (`#c3d3ec`) at 6:1, i.e. luminance <= 0.0620 (~#404755) - a lighter stop is a
+  contrast finding, not a design choice. Day-vs-night went from dL* +0.1..+3.3
+  (only the small "NIGHT" label told them apart) to +8..+14.
 - Night hour cards are a **tint** (`--night-card` sits one step off the surface in
   each theme, same ink in light), never a solid navy tile - a saturated block in a
   row reads as selection. `.hour--now` wins the row: accent border + top band +
@@ -54,7 +65,7 @@ suite can run locally — **never tune it to make it pass**. Run it with
 | script | what it proves |
 | --- | --- |
 | `run-audit.js` | overflow / contrast / coverage-at-3-scroll-positions / tap across 5 states × 2 themes × 12 hero palettes × long labels × desktop; drives hero scenes through **real fixture weather**, not a DOM override. Screenshots land in `audit/shot-*.png` and `audit/scene-*.png` (git-ignored) |
-| `pixel-review.py` | objective screenshot review: unthemed strip at the bottom, hero separates from the page, night skies differ from day |
+| `pixel-review.py` | objective screenshot review: unthemed strip at the bottom, hero separates from the page, day skies differ from night in **both** themes |
 | `design-lint.js` | type-scale dominance, corner-radius scale, spacing rhythm, line measure, clipped text |
 | `widths.js` | overflow/contrast/tap at 320–1440px, plus pathological unbroken labels |
 | `keyboard.js` | tab order, visible focus indicator on everything focusable, keyboard-only search |
@@ -62,4 +73,5 @@ suite can run locally — **never tune it to make it pass**. Run it with
 | `order-stress.js` | recents newest-first/dedup/cap-5 under out-of-order geocoder responses |
 | `live-check.js` | the **real** Open-Meteo API, no interception |
 | `geometry.js`, `polish.js` | element geometry/type scale; contrast headroom (not just pass/fail) |
+| `hero-marks.js` | nothing painted above/around the hero mark, per pixel, both themes x 12 skies |
 | `look.js` | **what a person sees on first load**: viewport-only screenshots at 390x844 and 1280x800 per scene x theme; fails if the hour strip is not fully visible on a laptop's first screen, or if the hero's reading row leaves >24px unused on the right |
