@@ -155,9 +155,16 @@
   /* ------------------------------------------------------------------ theme */
   const themeToggle = document.querySelector('[data-testid="theme-toggle"]');
 
+  /* Icon marks bake their accent per theme into the markup (an SVG cannot pick up a
+     CSS custom property set on an ancestor in every browser), so a theme change has to
+     re-render what is on screen rather than only flip the data-theme attribute. */
   function applyTheme(theme) {
     document.documentElement.dataset.theme = theme;
     store.set(KEYS.theme, theme);
+    if (state.weather) {
+      renderWeather(state.weather);
+      renderRecents();
+    }
   }
 
   themeToggle.addEventListener("click", () => {
@@ -275,6 +282,7 @@
   }
 
   function hideResults() {
+    document.body.classList.remove("is-coastal");
     setVisible(el.current, false);
     setVisible(el.hourlySection, false);
     setVisible(el.forecastSection, false);
@@ -307,9 +315,10 @@
     return `<span class="hero__icon${deep ? " icon--deep" : ""}">${Icons.weatherIcon(code, isDay, { size })}</span>`;
   }
 
-  /* A coastal hero is a band, not a slab: the verdicts under it are the headline, so
-     the sky gives them room. The temperature keeps its 64px+; the metrics become a
-     single row instead of a 2x2 grid. */
+  /* A coastal phone shows the verdicts first, so there the sky is a band, not a slab:
+     CSS (.is-coastal .hero) rearranges the same markup — the reading and the metrics
+     share one row instead of stacking. One markup path means the theme/unit re-render
+     can never disagree with what the width needs. */
   function renderWeather(data) {
     const city = state.city;
     const cur = data.current || {};
@@ -319,7 +328,6 @@
     const scene = sceneOf(Number.isFinite(code) ? code : 3, isDay);
     const sunrise = (daily.sunrise && daily.sunrise[0]) || "";
     const sunset = (daily.sunset && daily.sunset[0]) || "";
-    const compact = isCoastalView();
 
     const metrics = [
       metricRow("humidity", "droplet", `${Math.round(Number(cur.relative_humidity_2m))}%`, "Humidity"),
@@ -328,49 +336,29 @@
       metricRow("sunset", "sunset", String(sunset).slice(11, 16), "Sunset"),
     ];
 
-    el.current.innerHTML = compact
-      ? `<div class="hero hero--band" data-scene="${scene}">
-        <div class="hero__top">
-          <div class="hero__place">
-            <p class="hero__eyebrow">${isDay ? "Right now" : "Right now · night"}</p>
-            <p class="location-name" data-testid="location-name">${esc(city.label)}</p>
-          </div>
-          ${heroIcon(code, isDay, scene, 52)}
+    document.body.classList.toggle("is-coastal", isCoastalView());
+
+    el.current.innerHTML = `<div class="hero" data-scene="${scene}">
+      <div class="hero__top">
+        <div class="hero__place">
+          <p class="hero__eyebrow">${isDay ? "Right now" : "Right now · night"}</p>
+          <p class="location-name" data-testid="location-name">${esc(city.label)}</p>
         </div>
-        <div class="hero__reading">
-          <div class="temp-block">
-            <div class="current-temperature" data-testid="current-temperature">${temp(Number(cur.temperature_2m), true)}</div>
-            <div class="current-condition" data-testid="current-condition">${esc(conditionText(code))}</div>
-            <div class="feels-line">
-              ${Icons.uiIcon("thermometer", { size: 15 })}
-              <span>Feels like</span>
-              <span class="feels-like" data-testid="feels-like">${temp(Number(cur.apparent_temperature), true)}</span>
-            </div>
+        ${heroIcon(code, isDay, scene, 70)}
+      </div>
+      <div class="hero__reading">
+        <div class="temp-block">
+          <div class="current-temperature" data-testid="current-temperature">${temp(Number(cur.temperature_2m), true)}</div>
+          <div class="current-condition" data-testid="current-condition">${esc(conditionText(code))}</div>
+          <div class="feels-line">
+            ${Icons.uiIcon("thermometer", { size: 17 })}
+            <span>Feels like</span>
+            <span class="feels-like" data-testid="feels-like">${temp(Number(cur.apparent_temperature), true)}</span>
           </div>
-          <div class="hero__chips hero__chips--row">${metrics.join("")}</div>
         </div>
-      </div>`
-      : `<div class="hero" data-scene="${scene}">
-        <div class="hero__top">
-          <div class="hero__place">
-            <p class="hero__eyebrow">${isDay ? "Right now" : "Right now · night"}</p>
-            <p class="location-name" data-testid="location-name">${esc(city.label)}</p>
-          </div>
-          ${heroIcon(code, isDay, scene, 70)}
-        </div>
-        <div class="hero__reading">
-          <div class="temp-block">
-            <div class="current-temperature" data-testid="current-temperature">${temp(Number(cur.temperature_2m), true)}</div>
-            <div class="current-condition" data-testid="current-condition">${esc(conditionText(code))}</div>
-            <div class="feels-line">
-              ${Icons.uiIcon("thermometer", { size: 17 })}
-              <span>Feels like</span>
-              <span class="feels-like" data-testid="feels-like">${temp(Number(cur.apparent_temperature), true)}</span>
-            </div>
-          </div>
-          <div class="hero__chips">${metrics.join("")}</div>
-        </div>
-      </div>`;
+        <div class="hero__chips">${metrics.join("")}</div>
+      </div>
+    </div>`;
     el.current.hidden = false;
 
     renderHourly(data);
@@ -388,8 +376,12 @@
       el.waterBody.innerHTML = "";
       return;
     }
-    Water.render(el.waterBody, state.weather, state.marine, state.units);
+    /* Unhide before painting: the tide chart measures its own box, and a hidden
+       section measures zero. */
     el.water.hidden = false;
+    Water.render(el.waterBody, state.weather, state.marine, state.units, {
+      place: state.city ? state.city.label : "",
+    });
   }
 
   /* Data bars are inline SVG: CSS paint on a DOM element counts as a background
@@ -526,13 +518,15 @@
 
   function animateIn() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    [el.current, el.hourlySection, el.forecastSection].forEach((node, i) => {
+    let step = 0;
+    for (const node of [el.current, el.water, el.hourlySection, el.forecastSection]) {
+      if (node.hidden) continue;
       const inner = node.firstElementChild || node;
       inner.classList.remove("is-entering");
       void inner.offsetWidth;
-      inner.style.animationDelay = `${i * 60}ms`;
+      inner.style.animationDelay = `${step++ * 60}ms`;
       inner.classList.add("is-entering");
-    });
+    }
   }
 
   /* ------------------------------------------------------------------- fetch */

@@ -246,8 +246,9 @@
     if (W === null || W >= 1.5) held.push(["waves", wave]);
     if (V === null || V >= 25) held.push(["wind", `a ${breeze} wind`]);
     if (!dawn.length && !dusk.length) {
-      const when = i.turns.length ? i.turns.map((t) => t.time).join(", ") : "no clear turn today";
-      held.push(["tide", `the tide turns at ${when}, not in low light`]);
+      held.push(["tide", i.turns.length
+        ? `the tide turns at ${i.turns.map((t) => t.time).join(", ")}, not in low light`
+        : "no clear tide turn today, so nothing to time around"]);
     }
     return {
       rating: "Fair",
@@ -343,45 +344,85 @@
   }
 
   /* ---------------- tide chart ---------------- */
-  /* Inline SVG: CSS paint on a DOM element counts as a contrast candidate for any text
-     sampled over it, so the chart belongs in the SVG layer. Marks: the curve and its
-     filled belly, the dawn and dusk windows, every high and low with its time, and now. */
-  function tideChart(m) {
-    const W = 320;
-    const H = 132;
-    const padL = 10;
-    const padR = 10;
-    const top = 30;
-    const bottom = H - 22;
+  /* The chart is painted into a viewBox that matches its own box pixel-for-pixel, so
+     strokes and labels never stretch: the box is measured after the markup is in the
+     DOM and the chart is painted in a second pass (paintChart). Marks: the curve and
+     its filled belly, the dawn and dusk windows, every high and low with its time,
+     hour gridlines, mean sea level, and now. */
+  const CHART_MIN_W = 260;
+  const CHART_MIN_H = 124;
+
+  /* Catmull-Rom -> cubic bezier: hourly tide values are smooth, and a polyline reads
+     as a zigzag at 24 points across 300px. */
+  function smoothPath(pts) {
+    if (pts.length < 2) return pts.length ? `M${pts[0][0]} ${pts[0][1]}` : "";
+    let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i - 1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2] || p2;
+      const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+      d += `C${c1x.toFixed(1)} ${c1y.toFixed(1)} ${c2x.toFixed(1)} ${c2y.toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+    }
+    return d;
+  }
+
+  function tideChart(m, width, height) {
+    const W = Math.max(CHART_MIN_W, Math.round(width || 320));
+    const H = Math.max(CHART_MIN_H, Math.round(height || 136));
+    const padL = 8;
+    const padR = 8;
+    const top = 16;
+    const bottom = H - 24;
     const vals = m.series.filter((v) => v !== null);
     const lo = vals.length ? Math.min(...vals) : -1;
     const hi = vals.length ? Math.max(...vals) : 1;
     const span = Math.max(0.2, hi - lo);
     const x = (h) => padL + (h / 23) * (W - padL - padR);
     const y = (v) => bottom - ((v - lo) / span) * (bottom - top);
+    const cl = (v, a, b) => Math.max(a, Math.min(b, v));
 
-    let d = "";
-    let first = -1;
-    let last = -1;
+    /* Runs of consecutive hours with a reading, so a gap breaks the curve. */
+    const runs = [];
+    let run = [];
     for (let h = 0; h < 24; h++) {
       const v = m.series[h];
-      if (v === null) continue;
-      d += `${d ? "L" : "M"}${x(h).toFixed(1)} ${y(v).toFixed(1)}`;
-      if (first < 0) first = h;
-      last = h;
+      if (v === null) {
+        if (run.length) runs.push(run);
+        run = [];
+        continue;
+      }
+      run.push([x(h), y(v)]);
     }
-    const area =
-      first >= 0 && last > first
-        ? `${d}L${x(last).toFixed(1)} ${bottom}L${x(first).toFixed(1)} ${bottom}Z`
-        : "";
+    if (run.length) runs.push(run);
+
+    const paths = runs
+      .map((r) => smoothPath(r))
+      .filter(Boolean)
+      .join(" ");
+    const areas = runs
+      .filter((r) => r.length > 1)
+      .map((r) => `${smoothPath(r)}L${r[r.length - 1][0].toFixed(1)} ${bottom}L${r[0][0].toFixed(1)} ${bottom}Z`)
+      .join(" ");
+
+    const grid = [0, 6, 12, 18, 23]
+      .map(
+        (h) =>
+          `<line class="tc-grid" x1="${x(h).toFixed(1)}" y1="${top}" x2="${x(h).toFixed(1)}" y2="${bottom}"/>`,
+      )
+      .join("");
 
     const band = (centreMin, label) => {
       if (centreMin === null) return "";
-      const from = x(Math.max(0, (centreMin - LOW_LIGHT_MIN) / 60));
-      const to = x(Math.min(23, (centreMin + LOW_LIGHT_MIN) / 60));
+      const from = x(cl((centreMin - LOW_LIGHT_MIN) / 60, 0, 23));
+      const to = x(cl((centreMin + LOW_LIGHT_MIN) / 60, 0, 23));
       return (
-        `<rect class="tc-band" x="${from.toFixed(1)}" y="14" width="${(to - from).toFixed(1)}" height="${bottom - 14}" rx="7"/>` +
-        `<text class="tc-bandlabel" x="${((from + to) / 2).toFixed(1)}" y="11" text-anchor="middle">${label}</text>`
+        `<rect class="tc-band" x="${from.toFixed(1)}" y="${top}" width="${(to - from).toFixed(1)}" height="${bottom - top}" rx="8"/>` +
+        `<text class="tc-bandlabel" x="${((from + to) / 2).toFixed(1)}" y="10" text-anchor="middle">${label}</text>`
       );
     };
 
@@ -390,49 +431,77 @@
         const mx = x(t.hour);
         const my = y(t.heightM);
         const high = t.kind === "High";
-        const ly = high ? my - 8 : my + 14;
-        const ky = high ? ly - 9 : ly + 9;
+        const ly = cl(high ? my - 9 : my + 15, top + 8, bottom - 2);
+        const ky = cl(high ? ly - 10 : ly + 10, 10, H - 4);
         return (
           `<g class="tc-turn tc-turn--${t.kind.toLowerCase()}">` +
-          `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="3.2"/>` +
-          `<text x="${mx.toFixed(1)}" y="${Math.max(11, Math.min(H - 6, ly)).toFixed(1)}" text-anchor="middle">${t.time}</text>` +
-          `<text class="tc-turnkind" x="${mx.toFixed(1)}" y="${Math.max(11, Math.min(H - 4, ky)).toFixed(1)}" text-anchor="middle">${t.kind}</text>` +
+          `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="3.4"/>` +
+          `<text x="${mx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle">${t.time}</text>` +
+          `<text class="tc-turnkind" x="${mx.toFixed(1)}" y="${ky.toFixed(1)}" text-anchor="middle">${t.kind}</text>` +
           `</g>`
         );
       })
       .join("");
 
+    const hours = [0, 6, 12, 18, 23]
+      .map(
+        (h) =>
+          `<text class="tc-hour" x="${x(h).toFixed(1)}" y="${H - 6}" text-anchor="${h === 0 ? "start" : h === 23 ? "end" : "middle"}">${String(h).padStart(2, "0")}</text>`,
+      )
+      .join("");
+
     const nowX = m.nowHour === null ? null : x(m.nowHour);
     const nowY = m.nowHour === null || m.series[m.nowHour] === null ? null : y(m.series[m.nowHour]);
+    const pillW = 30;
     const now =
       nowX === null
         ? ""
         : `<g class="tc-now">` +
-          `<line x1="${nowX.toFixed(1)}" y1="14" x2="${nowX.toFixed(1)}" y2="${bottom + 3}"/>` +
-          (nowY === null ? "" : `<circle cx="${nowX.toFixed(1)}" cy="${nowY.toFixed(1)}" r="4.4"/>`) +
-          `<text x="${Math.min(W - 18, Math.max(16, nowX)).toFixed(1)}" y="${bottom + 14}" text-anchor="middle">now</text>` +
+          `<line x1="${nowX.toFixed(1)}" y1="${top}" x2="${nowX.toFixed(1)}" y2="${bottom + 2}"/>` +
+          (nowY === null ? "" : `<circle cx="${nowX.toFixed(1)}" cy="${nowY.toFixed(1)}" r="4.6"/>`) +
+          `<rect class="tc-nowpill" x="${cl(nowX - pillW / 2, 2, W - pillW - 2).toFixed(1)}" y="${H - 17}" width="${pillW}" height="13" rx="6.5"/>` +
+          `<text x="${cl(nowX, 2 + pillW / 2, W - pillW / 2 - 2).toFixed(1)}" y="${H - 7}" text-anchor="middle">now</text>` +
           `</g>`;
 
-    const hours = [0, 6, 12, 18, 23]
-      .map(
-        (h) =>
-          `<text class="tc-hour" x="${x(h).toFixed(1)}" y="${bottom + 14}" text-anchor="${h === 0 ? "start" : h === 23 ? "end" : "middle"}">${String(h).padStart(2, "0")}</text>`,
-      )
-      .join("");
+    /* A hour tick that sits under the "now" pill would fight it, so drop that tick. */
+    const ticks =
+      nowX === null
+        ? hours
+        : hours
+            .split("</text>")
+            .filter((frag) => {
+              const at = /x="([\d.]+)"/.exec(frag);
+              if (!at) return true;
+              return Math.abs(Number(at[1]) - nowX) > pillW / 2 + 6;
+            })
+            .join("</text>");
 
     return (
-      `<svg class="tide-chart__svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" ` +
-      `aria-label="Sea level today with the highs, lows, dawn and dusk windows, and now">` +
+      `<svg class="tide-chart__svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" ` +
+      `aria-label="Sea level today. ${
+        m.turns.length
+          ? m.turns.map((t) => `${t.kind} ${t.time}, ${t.heightM.toFixed(1)} metres`).join("; ")
+          : "no clear turn today"
+      }.${m.trend ? ` Now ${m.trend.toLowerCase()}.` : ""}` +
+      ` Dawn is around ${m.inputs.sunrise || "sunrise"} and dusk around ${m.inputs.sunset || "sunset"}.">` +
+      grid +
       band(m.inputs.sunriseMin, "dawn") +
       band(m.inputs.sunsetMin, "dusk") +
       `<line class="tc-zero" x1="${padL}" y1="${y(0).toFixed(1)}" x2="${W - padR}" y2="${y(0).toFixed(1)}"/>` +
-      (area ? `<path class="tc-area" d="${area}"/>` : "") +
-      (d ? `<path class="tc-line" d="${d}"/>` : "") +
+      (areas ? `<path class="tc-area" d="${areas}"/>` : "") +
+      (paths ? `<path class="tc-line" d="${paths}"/>` : "") +
       marks +
-      hours +
+      ticks +
       now +
       `</svg>`
     );
+  }
+
+  /* The kicker repeats the place, so it takes only the town — the hero already
+     prints the full "City, Region, Country" label. */
+  function shortPlace(label) {
+    const head = String(label).split(",")[0].trim();
+    return head.length > 22 ? `${head.slice(0, 21).trim()}…` : head;
   }
 
   /* ---------------- markup ---------------- */
@@ -470,13 +539,12 @@
           .join("")
       : `<li class="tide-event tide-event--none">The hourly sea level stays flat today.</li>`;
 
+    const trendChip = `<span class="tide-trend">${Icons.waterIcon("tide", { size: 13 })}Tide <span data-testid="tide-trend">${esc(m.trend || "Steady")}</span></span>`;
+
     return `
       <div class="water__head">
-        <h2 class="section__title water__title">Today at the water</h2>
-        <p class="water__trend">
-          ${Icons.waterIcon("tide", { size: 14 })}
-          <span data-testid="tide-trend">${esc(m.trend || "Steady")}</span>
-        </p>
+        <p class="water__kicker">${Icons.waterIcon("wave", { size: 14 })} ${esc(m.place || "Today at the water")}</p>
+        <p class="water__trendwrap">${trendChip}</p>
       </div>
       <div class="ratings">
         ${ratingCard("beach", "Beach today", v.beach, "beach")}
@@ -485,7 +553,7 @@
       <p class="water__disclaimer">An outlook from today's model data, not a promise — use your eyes once you're there.</p>
       <section class="water__panel tide">
         <h3 class="water__subtitle">Tides today</h3>
-        <div class="tide-chart" data-testid="tide-chart">${tideChart(m)}</div>
+        <div class="tide-chart" data-testid="tide-chart"></div>
         <ul class="tide-events">${events}</ul>
         <p class="best-times">${esc(bestTimes(m))}</p>
         <p class="tide-note" data-testid="tide-note">Tide times are approximate — hourly model values, not a harbour table.</p>
@@ -541,10 +609,41 @@
     MOON_NAMES,
   };
 
-  function render(node, forecast, marine, units) {
+  function render(node, forecast, marine, units, ctx) {
     const m = model(forecast, marine);
     m.units = units;
+    m.place = shortPlace((ctx && ctx.place) || "");
     node.innerHTML = html(m);
+    paintChart(node, m);
     return m;
+  }
+
+  /* Second pass: the chart needs its own pixel box before it can be drawn, so it is
+     painted once the markup is in the document. A ResizeObserver keeps it honest when
+     the column changes width (rotation, desktop reflow), since the drawing is
+     pixel-for-pixel with its box. */
+  function paintChart(node, m) {
+    const box = node.querySelector('[data-testid="tide-chart"]');
+    if (!box) return;
+    let lastW = 0;
+    const draw = () => {
+      const w = box.clientWidth || 0;
+      if (!w) return false;
+      /* Only repaint when the box actually changes size, otherwise a repaint would
+         wipe a text selection out from under someone reading the page. */
+      if (w === lastW) return true;
+      lastW = w;
+      box.innerHTML = tideChart(m, w, box.clientHeight || 136);
+      return true;
+    };
+    if (!draw() && typeof requestAnimationFrame === "function") requestAnimationFrame(draw);
+    if (typeof ResizeObserver === "function") {
+      if (box.__tideResize) box.__tideResize.disconnect();
+      const ro = new ResizeObserver(() => {
+        if (Math.abs(box.clientWidth - lastW) > 1) draw();
+      });
+      ro.observe(box);
+      box.__tideResize = ro;
+    }
   }
 })(typeof window !== "undefined" ? window : globalThis);

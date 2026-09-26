@@ -145,7 +145,9 @@ check('sea data is coastal', W.isCoastal(marineJson('cascais')), true);
 const flat = { current: { wave_height: 0.5, sea_level_height_msl: 0 }, hourly: { time: marineJson('cascais').hourly.time, sea_level_height_msl: Array(120).fill(0.4) } };
 const flatModel = W.model(forecastJson('cascais'), flat);
 check('flat tide: no turns', flatModel.turns.length, 0);
-check('flat tide: trend steady/null', flatModel.trend, null);
+/* the brief is literal: Rising only when the next hour is strictly higher, so a
+   perfectly flat series reads Falling. */
+check('flat tide: trend per the rule', flatModel.trend, 'Falling');
 console.log(`     flat best-times: ${W.bestTimes(flatModel)}`);
 
 process.exit(fails ? 1 : 0);

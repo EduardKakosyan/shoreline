@@ -150,6 +150,10 @@
     waves: () =>
       `<path d="M3.4 10.2c1.9-2.2 3.7-2.2 5.6 0s3.7 2.2 5.6 0 3.7-2.2 5.6 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/>` +
       `<path d="M3.4 15.4c1.9-2.2 3.7-2.2 5.6 0s3.7 2.2 5.6 0 3.7-2.2 5.6 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none" opacity="0.65"/>`,
+    /* one wave crest — used as a small kicker mark */
+    wave: () =>
+      `<path d="M2.6 14.4c2.4-3.2 4.7-3.2 7.1 0s4.7 3.2 7.1 0 4.7-3.2 4.7-3.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/>` +
+      `<circle cx="18.4" cy="6.4" r="2.4" fill="var(--water-accent, currentColor)" stroke="none"/>`,
     /* a longer, single swell — the deep-water wave */
     swell: () =>
       `<path d="M3 15.6c2.4-6.6 6-6.6 8.4-2.2 1.6 2.9 3.4 3.6 5.4 2.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/>` +

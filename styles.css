@@ -151,8 +151,10 @@
 
   --tide-line: #0c6b80;
   --tide-area: #d3e6ef;
+  --tide-grid: #dde8f2;
   --tide-band: rgba(20, 90, 120, 0.1);
-  --tide-now: #b4560f;
+  --tide-now: #9c4808;
+  --tide-now-on: #fdf3e7;
   --tide-label: #33465c;
   --tide-kind: #6b7d92;
 
@@ -247,8 +249,10 @@ html[data-theme="dark"] {
 
   --tide-line: #58c4da;
   --tide-area: #1e3a55;
+  --tide-grid: #24395a;
   --tide-band: rgba(150, 200, 235, 0.13);
   --tide-now: #ffb265;
+  --tide-now-on: #2a1503;
   --tide-label: #cdddf1;
   --tide-kind: #9db2cc;
 
@@ -814,69 +818,61 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
 
 /* Coastal phones lead with the verdicts, so the sky becomes a band: the reading and
    the four metrics share one row instead of stacking, and the card stops being a slab.
-   The temperature keeps its size — only the arrangement changes. */
-.hero--band {
-  padding: 14px 16px 15px;
-  gap: 12px;
-}
-
-.hero--band .hero__top {
-  align-items: center;
-  gap: 10px;
-}
-
-.hero--band .hero__icon {
-  width: 58px;
-  height: 58px;
-}
-
-.hero--band .location-name {
-  font-size: 1.125rem;
-}
-
-.hero--band .hero__reading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.hero--band .current-condition {
-  margin-top: 4px;
-  font-size: 1.0625rem;
-}
-
-.hero--band .feels-line {
-  margin-top: 6px;
-  font-size: 0.875rem;
-}
-
-.hero__chips--row {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  flex: 0 1 auto;
-  min-width: 0;
-  gap: 6px;
-}
-
-.hero__chips--row .metric {
-  min-height: 0;
-  padding: 6px 9px;
-  gap: 1px;
-  border-radius: 11px;
-}
-
-.hero__chips--row .metric__label {
-  font-size: 0.5625rem;
-  letter-spacing: 0.06em;
-}
-
-.hero__chips--row .metric__value {
-  font-size: 0.875rem;
-}
-
-.hero__chips--row .metric__icon {
-  width: 13px;
-  height: 13px;
+   The temperature keeps its size — only the arrangement changes. Phone only: past the
+   phone breakpoint the coastal hero is wide enough for its own two-column layout. */
+@media (max-width: 619.98px) {
+  .is-coastal .hero {
+    padding: 14px 16px 15px;
+    gap: 12px;
+  }
+  .is-coastal .hero .hero__top {
+    align-items: center;
+    gap: 10px;
+  }
+  .is-coastal .hero .hero__icon {
+    width: 58px;
+    height: 58px;
+  }
+  .is-coastal .hero .location-name {
+    font-size: 1.125rem;
+  }
+  .is-coastal .hero .hero__reading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .is-coastal .hero .current-condition {
+    margin-top: 4px;
+    font-size: 1.0625rem;
+  }
+  .is-coastal .hero .feels-line {
+    margin-top: 6px;
+    font-size: 0.875rem;
+  }
+  .is-coastal .hero__chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex: 0 1 auto;
+    min-width: 0;
+    gap: 6px;
+  }
+  .is-coastal .hero__chips .metric {
+    min-height: 0;
+    padding: 6px 9px;
+    gap: 1px;
+    border-radius: 11px;
+  }
+  .is-coastal .hero__chips .metric__label {
+    font-size: 0.5625rem;
+    letter-spacing: 0.06em;
+  }
+  .is-coastal .hero__chips .metric__value {
+    font-size: 0.875rem;
+  }
+  .is-coastal .hero__chips .metric__icon {
+    width: 13px;
+    height: 13px;
+  }
 }
 
 /* .hero__reading is a plain column on a phone; the desktop rules put the
@@ -1643,12 +1639,31 @@ html[data-theme="dark"] .empty-state {
   min-height: 26px;
 }
 
-.water__title {
+.water__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
   margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
 }
 
-.water__trend {
+.water__kicker svg {
+  color: var(--water-accent);
+  flex: none;
+}
+
+.water__trendwrap {
   margin: 0 0 0 auto;
+}
+
+/* The trend reads as a Tide pill; the word "Tide" sits outside the value so the
+   pill says "Tide Rising" rather than a bare verb. */
+.tide-trend {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1664,7 +1679,7 @@ html[data-theme="dark"] .empty-state {
   white-space: nowrap;
 }
 
-.water__trend svg {
+.tide-trend svg {
   color: var(--water-accent);
 }
 
@@ -1793,13 +1808,18 @@ html[data-theme="dark"] .empty-state {
   border-radius: var(--radius-sm);
   background: var(--water-panel-2);
   border: 1px solid var(--water-border);
-  padding: 2px;
+  overflow: hidden;
+  /* the painter reads this box, so the box itself carries the height */
+  min-height: var(--tide-chart-height, 136px);
 }
 
+/* The SVG is drawn at its box's own pixel size (see Water.paintChart), so it needs no
+   scaling here — that is what keeps the stroke even and the labels unstretched. The
+   height is opt-in through --tide-chart-height, which the painter reads back. */
 .tide-chart__svg {
   display: block;
   width: 100%;
-  height: 136px;
+  height: auto;
 }
 
 .tide-chart__svg text {
@@ -1808,6 +1828,13 @@ html[data-theme="dark"] .empty-state {
 
 .tc-band {
   fill: var(--tide-band);
+}
+
+/* Hour gridlines sit under everything, so they stay the quietest thing in the
+   chart — a place-keeper, not a second curve. */
+.tc-grid {
+  stroke: var(--tide-grid);
+  stroke-width: 1;
 }
 
 .tc-bandlabel {
@@ -1876,8 +1903,13 @@ html[data-theme="dark"] .empty-state {
   stroke-width: 1.6;
 }
 
-.tc-now text {
+.tc-nowpill {
   fill: var(--tide-now);
+}
+
+.tc-now text {
+  /* the word sits on a solid pill of the same colour, so it takes the panel ink */
+  fill: var(--tide-now-on);
   font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -2190,5 +2222,70 @@ html[data-theme="dark"] .empty-state {
   }
   .day {
     padding: 14px 16px;
+  }
+}
+
+/* ==========================================================================
+   A coastal place on a wide screen reads as a water dashboard: the verdicts and
+   the tide chart sit beside the current weather and the hours, with the week
+   across the bottom. Inland results keep the plain two-column layout above.
+   ========================================================================== */
+@media (min-width: 940px) {
+  body.is-coastal .shell {
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+    grid-template-areas:
+      "header  header"
+      "search  search"
+      "hero    water"
+      "hours   water"
+      "week    week"
+      "recents recents"
+      "foot    foot";
+  }
+  body.is-coastal [data-testid="water"] {
+    grid-area: water;
+  }
+  body.is-coastal [data-testid="hourly"] {
+    grid-area: hours;
+  }
+  body.is-coastal [data-testid="forecast-days"] {
+    grid-area: week;
+  }
+  /* The week runs across the bottom in two columns, so no card is stretched
+     to twice its measure. */
+  body.is-coastal .days {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  body.is-coastal .hero .hero__icon {
+    width: 84px;
+    height: 84px;
+  }
+  .water {
+    gap: 12px;
+  }
+  /* Verdicts side by side, taller chart, sea state in one row of four: the wide
+     column has the room the phone does not. */
+  .ratings {
+    gap: 12px;
+  }
+  .rating {
+    padding: 14px 16px 15px;
+  }
+  .rating__word {
+    font-size: 1.875rem;
+  }
+  .tide-chart {
+    --tide-chart-height: 176px;
+  }
+  .water__panel {
+    padding: 16px 17px 17px;
+  }
+  .sea__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .tide-events {
+    grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
   }
 }
