@@ -247,10 +247,12 @@
     if (W === null || W >= 1.5) held.push(["waves", wave]);
     if (V === null || V >= 25) held.push(["wind", `a ${breeze} wind`]);
     if (!dawn.length && !dusk.length) {
-      /* A noun phrase, so it lists cleanly beside "2.2 m waves" rather than reading
-         as a second sentence bolted onto the list. */
+      /* A noun phrase, so it lists cleanly beside "2.2 m waves". The turn times are
+         deliberately not repeated here — the chart and the tiles below print them, and
+         spelling them out pushed the second card to seven lines and the tide chart off
+         the first screen at a four-turn place like Honolulu. */
       held.push(["tide", i.turns.length
-        ? `no tide turn in low light (${i.turns.map((t) => t.time).join(", ")})`
+        ? "no tide turn in low light"
         : "no tide turn to time the day around"]);
     }
     return {

@@ -41,6 +41,12 @@ const BAD = /(NaN|undefined|Infinity|°C°C|--°|:NaN|null m|m m|\bnull\b)/;
       });
 
       await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+      /* the second viewport pass runs in Fahrenheit: the conversion path on live data is
+         the one no fixture exercises (feet tides, mph/ft inside the reasons). */
+      if (VIEWPORTS.indexOf(vp) === VIEWPORTS.length - 1 && VIEWPORTS.length > 1) {
+        await page.getByTestId('unit-toggle').click();
+        await page.waitForTimeout(150);
+      }
       await page.getByLabel('City', { exact: true }).fill(place);
       await page.keyboard.press('Enter');
       // real network: give it room, then settle
@@ -78,6 +84,7 @@ const BAD = /(NaN|undefined|Infinity|°C°C|--°|:NaN|null m|m m|\bnull\b)/;
           period: txt('[data-testid="wave-period"]'),
           swell: txt('[data-testid="swell-direction"]'),
           sst: txt('[data-testid="sea-temperature"]'),
+          wind: txt('[data-testid="wind"]'),
           moon: txt('[data-testid="moon-phase"]'),
           chart: vis('[data-testid="tide-chart"]'),
           chartSvg: !!(document.querySelector('[data-testid="tide-chart"] svg')),
@@ -85,6 +92,9 @@ const BAD = /(NaN|undefined|Infinity|°C°C|--°|:NaN|null m|m m|\bnull\b)/;
           innerW: innerWidth,
           bodyText: document.body.innerText,
           fold: (() => { const b = document.querySelector('[data-testid="beach-rating"]'); return b ? Math.round(b.getBoundingClientRect().bottom + scrollY) : null; })(),
+          chartCut: (() => { const c = document.querySelector('[data-testid="tide-chart"]'); if (!c) return null; const r = c.getBoundingClientRect(); return r.width > 0 ? Math.round(r.bottom - innerHeight) : null; })(),
+          unit: (() => { const t = document.querySelector('[data-testid="unit-toggle"]'); return t ? t.textContent.trim() : ''; })(),
+          tempUnit: /°F/.test(txt('[data-testid="current-temperature"]') || '') ? 'F' : 'C',
         };
       })()`);
 
@@ -125,6 +135,19 @@ const BAD = /(NaN|undefined|Infinity|°C°C|--°|:NaN|null m|m m|\bnull\b)/;
         if (!['Rising','Falling','Steady'].includes(m.trend)) problems.push(`${tag}: tide trend reads "${m.trend}"`);
         if (vp.height === 844 && m.fold !== null && m.fold > vp.height) {
           problems.push(`${tag}: verdicts end ${m.fold}px down, past the first screen`);
+        }
+        if (vp.height === 844 && m.chartCut !== null && m.chartCut > 0) {
+          problems.push(`${tag}: the tide chart is cut ${m.chartCut}px below the first screen`);
+        }
+        if (m.tempUnit === 'F') {
+          if (!/ft$/.test(m.waves || '')) problems.push(`${tag}: Fahrenheit mode shows wave height "${m.waves}"`);
+          if (!/^\d+\s+mph/.test(m.wind || '')) problems.push(`${tag}: Fahrenheit mode shows wind "${m.wind}"`);
+          for (const [k, v] of [['beach', m.beachWhy], ['fishing', m.fishWhy]]) {
+            if (/\d+(\.\d+)? (m|km\/h)\b|°C/.test(v || '')) problems.push(`${tag}: ${k} reason still metric in Fahrenheit mode — "${v}"`);
+          }
+          m.turns.forEach((t) => {
+            if (!/ ft$/.test(t)) problems.push(`${tag}: a tide turn reads "${t}" in Fahrenheit mode`);
+          });
         }
       } else if (!m.marineNote) {
         console.log(`  note ${tag}: treated as inland (marine answered nulls)`);
