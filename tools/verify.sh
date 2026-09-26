@@ -27,8 +27,12 @@ run "keyboard audit" node audit/keyboard.js
 run "recents order stress" node audit/order-stress.js
 run "hourly strip invariants" node audit/hourly.js
 run "hero mark carries no stray paint" node audit/hero-marks.js
-run "first-screen look (mobile + laptop)" node audit/look.js
+run "first-screen look (mobile + laptop, inland + coastal)" node audit/look.js
 run "hero palette contrast" python3 tools/palette-check.py
+run "water rules vs the fixture verdicts" node audit/water-rules.js
+run "water first screen + chart fidelity" node audit/water-look.js
+run "water composition lint" node audit/water-lint.js
+run "weather marks (mainly clear, night moon)" node audit/icon-check.js
 
 printf '\n'
 if [ "$fail" -eq 0 ]; then
