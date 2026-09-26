@@ -1,9 +1,13 @@
 /* First-impressions harness: what a person sees on first load, at 390x844 and
-   1280x800, per hero scene x theme. Viewport shots only (no full-page), plus
-   the two numbers the operator complained about: how much of the hour strip is
+   1280x800, per hero scene x theme, for both readings of the same city: inland
+   (the marine API answers nulls, so the app stays the weather app) and coastal
+   (the same coordinates answer sea data). Viewport shots only (no full-page),
+   plus the numbers the operator complained about: how much of the hour strip is
    inside the first screen, and how much of the hero is empty space beside the
-   temperature. Run: node audit/look.js  (LOOK_VIEWPORTS=1280x800,390x844)
-   Screenshots: audit/look-<vp>-<scene>-<theme>.png (git-ignored) */
+   temperature. Shoreline's priority ordering is asserted per reading: an inland
+   first screen still shows the whole hour strip on a laptop; a coastal first
+   screen shows both verdicts whole. Run: node audit/look.js
+   (LOOK_VIEWPORTS=1280x800,390x844)  Screenshots: audit/look-<vp>-<scene>-<mode>-<theme>.png */
 const fs = require('fs');
 const path = require('path');
 const { chromium } = require('@playwright/test');
@@ -42,6 +46,13 @@ const MEASURE = `(() => {
   out.week = r(week);
   out.temp = r(temp);
   out.chips = r(chips);
+  out.water = r(document.querySelector('[data-testid="water"]'));
+  /* raw (unrounded) boxes: rounding y and bottom separately loses a whole pixel of a
+     32px-tall box, which reads as a 3% fold cut that does not exist. */
+  out.ratings = [...document.querySelectorAll('[data-testid="beach-rating"], [data-testid="fishing-rating"]')]
+    .map((el) => el.getBoundingClientRect())
+    .filter((b) => b.height > 0)
+    .map((b) => ({ y: b.y, h: b.height, bottom: b.bottom }));
   if (out.hero && temp) {
     /* "empty space to the right of the temperature": the reading row is the
        band that must feel used, so measure how much of it no child box covers.
@@ -72,10 +83,10 @@ const MEASURE = `(() => {
     const usedRight = covered.length ? Math.max(...covered.map((c) => c[1])) : 0;
     out.uncoveredRightOfReading = Math.round(rowRight - usedRight);
   }
-  if (out.strip) {
-    const visible = Math.max(0, Math.min(vh, out.strip.bottom) - Math.max(0, out.strip.y));
-    out.stripVisibleFrac = +(visible / out.strip.h).toFixed(2);
-  }
+  const inside = (b) => (b ? Math.max(0, Math.min(vh, b.bottom) - Math.max(0, b.y)) / b.h : null);
+  if (out.strip) out.stripVisibleFrac = inside(out.strip);
+  if (out.ratings.length) out.ratingsVisibleFrac = +(Math.min(...out.ratings.map(inside)).toFixed(3));
+  if (out.strip) out.stripVisibleFrac = +out.stripVisibleFrac.toFixed(2);
   const firstHour = document.querySelector('.hour');
   out.hours = { count: document.querySelectorAll('.hour').length, w: firstHour ? Math.round(firstHour.getBoundingClientRect().width) : 0, h: firstHour ? Math.round(firstHour.getBoundingClientRect().height) : 0 };
   return out;
@@ -88,11 +99,13 @@ const MEASURE = `(() => {
     const wide = vp.width >= 940;
     for (const theme of ['light', 'dark']) {
       for (const scene of SCENES) {
+      for (const mode of ['inland', 'coastal']) {
         const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
         const page = await ctx.newPage();
         await installStub(page, {
           search: searchMapFor(['lisbon']),
           city: { key: 'lisbon', currentCode: scene.code, isDay: scene.isDay },
+          inland: mode === 'inland',
         });
         await page.goto(BASE + '/');
         await setTheme(page, theme);
@@ -101,17 +114,19 @@ const MEASURE = `(() => {
         await page.getByTestId('current-weather').waitFor({ timeout: 6000 });
         await page.waitForTimeout(250);
         const m = await page.evaluate(MEASURE);
-        const shot = path.join(HERE, `look-${vp.tag}-${scene.name}-${theme}.png`);
+        const shot = path.join(HERE, `look-${vp.tag}-${scene.name}-${mode}-${theme}.png`);
         await page.screenshot({ path: shot });
-        rows.push({ vp: vp.tag, wide, theme, scene: scene.name, ...m });
+        rows.push({ vp: vp.tag, wide, theme, scene: scene.name, mode, ...m });
         console.log(
-          `${vp.tag.padEnd(9)} ${theme.padEnd(5)} ${scene.name.padEnd(11)}` +
+          `${vp.tag.padEnd(9)} ${theme.padEnd(5)} ${scene.name.padEnd(11)} ${mode.padEnd(8)}` +
+            ` water ${m.water && m.water.w > 0 ? 'on ' : 'off'} verdicts ${m.ratingsVisibleFrac}` +
             ` hero ${String(m.hero && m.hero.h).padStart(4)}px  emptyRight ${String(m.emptyRightOfTemp).padStart(4)}px  uncovered ${String(m.uncoveredRightOfReading).padStart(4)}px` +
             `  strip ${String(m.strip && m.strip.h).padStart(4)}px @y${m.strip && m.strip.y} visible ${m.stripVisibleFrac}` +
             `  badge ${m.badge && m.badge.w}x${m.badge && m.badge.h}` +
             `  doc ${m.doc.h}`,
         );
         await ctx.close();
+        }
       }
     }
   }
@@ -120,16 +135,25 @@ const MEASURE = `(() => {
 
   const problems = [];
   for (const r of rows) {
-    if (r.doc.w > (r.vp === '390x844' ? 390 : 1280)) problems.push(`${r.vp} ${r.theme} ${r.scene}: doc wider than viewport`);
-    if (r.wide && r.stripVisibleFrac !== undefined && r.stripVisibleFrac < 0.99)
-      problems.push(`${r.vp} ${r.theme} ${r.scene}: hour strip only ${(r.stripVisibleFrac * 100).toFixed(0)}% visible on first load`);
+    const tag = `${r.vp} ${r.theme} ${r.scene} ${r.mode}`;
+    if (r.doc.w > (r.vp === '390x844' ? 390 : 1280)) problems.push(`${tag}: doc wider than viewport`);
+    if (r.mode === 'inland') {
+      if (r.water && r.water.w > 0) problems.push(`${tag}: an inland place shows a water section`);
+      if (r.wide && r.stripVisibleFrac !== undefined && r.stripVisibleFrac < 0.99)
+        problems.push(`${tag}: hour strip only ${(r.stripVisibleFrac * 100).toFixed(0)}% visible on first load`);
+    } else {
+      if (!r.water || !(r.water.w > 0)) problems.push(`${tag}: a coastal place shows no water section`);
+      if (r.ratings.length !== 2) problems.push(`${tag}: expected two verdicts, found ${r.ratings.length}`);
+      if ((r.ratingsVisibleFrac ?? 0) < 0.99)
+        problems.push(`${tag}: a verdict is only ${((r.ratingsVisibleFrac ?? 0) * 100).toFixed(0)}% visible on first load`);
+    }
     if (r.wide && r.uncoveredRightOfReading > 24)
-      problems.push(`${r.vp} ${r.theme} ${r.scene}: ${r.uncoveredRightOfReading}px of the hero's reading row is empty on the right`);
+      problems.push(`${tag}: ${r.uncoveredRightOfReading}px of the hero's reading row is empty on the right`);
   }
   if (problems.length) {
     console.log('\nISSUES:');
     for (const p of problems) console.log('  ' + p);
     process.exit(1);
   }
-  console.log('\nLOOK OK (hour strip fully visible on first load, no h-overflow)');
+  console.log('\nLOOK OK (inland: hour strip whole; coastal: both verdicts whole; no h-overflow)');
 })();

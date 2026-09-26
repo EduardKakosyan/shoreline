@@ -152,6 +152,15 @@ async function installStub(page, opts = {}) {
       Object.keys(COASTAL_MATCHES).find((k) => near(COASTAL_MATCHES[k])) ||
       Object.keys(CITIES).find((k) => near(CITIES[k]));
     if (!key) return route.fulfill({ status: 400, contentType: 'application/json', body: '{}' });
+    /* opts.inland: answer like an inland point (200 + nulls) whatever the key,
+       so a coastal fixture city can be read as the weather app. */
+    if (opts.inland && key in MARINE) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(marineJson(lat, lon, undefined, url.searchParams)),
+      });
+    }
     if (failingMarine.includes(key)) return route.fulfill({ status: 500, contentType: 'application/json', body: '{}' });
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(marineJson(lat, lon, key, url.searchParams)) });
   });
