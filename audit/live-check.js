@@ -49,14 +49,39 @@ const BAD = /(NaN|undefined|Infinity|°C°C|--°|:NaN|null m|m m|\bnull\b)/;
       }
       await page.getByLabel('City', { exact: true }).fill(place);
       await page.keyboard.press('Enter');
-      // real network: give it room, then settle
-      await page.getByTestId('current-weather').waitFor({ timeout: 20_000 }).catch(() => {});
-      await page.waitForTimeout(2500);
+      /* The app's own settle signal, not a fixed sleep: the loading skeleton goes away
+         when the forecast and marine answers land. A fixed sleep made the live pass
+         report "no weather rendered" for Denver, Tokyo and Reykjavik on a slow moment
+         of the real internet — a harness fault dressed up as an app fault. The marine
+         answer often arrives after the forecast, so also wait for the water section to
+         settle into whichever state belongs here. */
+      await page
+        .waitForFunction(
+          () => {
+            const l = document.querySelector('[data-testid="loading"]');
+            if (l && !l.hidden) return false;
+            const e = document.querySelector('[data-testid="error"]');
+            if (e && !e.hidden) return true;
+            return !!document.querySelector('[data-testid="current-weather"]:not([hidden])');
+          },
+          { timeout: 30_000 },
+        )
+        .catch(() => {});
+      await page.waitForTimeout(900);
 
       const picker = await page.getByTestId('match-list').isVisible().catch(() => false);
       if (picker) {
         await page.getByTestId('match-option').first().click();
-        await page.waitForTimeout(2500);
+        await page
+          .waitForFunction(
+            () => {
+              const l = document.querySelector('[data-testid="loading"]');
+              return !!document.querySelector('[data-testid="current-weather"]:not([hidden])') && !(l && !l.hidden);
+            },
+            { timeout: 30_000 },
+          )
+          .catch(() => {});
+        await page.waitForTimeout(900);
       }
 
       const m = await page.evaluate(`(() => {
