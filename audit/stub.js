@@ -198,6 +198,8 @@ async function installStub(page, opts = {}) {
             daily: {
               ...base.daily,
               weather_code: patch.dailyCodes || base.daily.weather_code,
+              temperature_2m_max: patch.highs || base.daily.temperature_2m_max,
+              temperature_2m_min: patch.lows || base.daily.temperature_2m_min,
             },
           }
         : base;

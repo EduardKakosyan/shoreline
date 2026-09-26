@@ -490,7 +490,7 @@
       const pop = Number(daily.precipitation_probability_max[i]);
       const left = Math.round(((lows[i] - weekMin) / weekSpan) * 100);
       const width = Math.max(6, Math.round(((highs[i] - lows[i]) / weekSpan) * 100));
-      const bucket = tempBucket(highs[i]);
+      const bucket = tempBucket(Math.round(highs[i]));
       markup += `<div class="day card" data-testid="forecast-day">
         <div class="day__icon${deepInk(themeIsDark())}">${Icons.weatherIcon(code, 1, { size: 32 })}</div>
         <div class="day__main">

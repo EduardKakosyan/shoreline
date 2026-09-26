@@ -30,6 +30,7 @@ run "hourly strip invariants" node audit/hourly.js
 run "hero mark carries no stray paint" node audit/hero-marks.js
 run "first-screen look (mobile + laptop, inland + coastal)" node audit/look.js
 run "hero palette contrast" python3 tools/palette-check.py
+run "forecast rail hue (cool reads cool, not olive)" node audit/rail-hue.js
 run "water rules vs the fixture verdicts" node audit/water-rules.js
 run "water first screen + chart fidelity" node audit/water-look.js
 run "water composition lint" node audit/water-lint.js
