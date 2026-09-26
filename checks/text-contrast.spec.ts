@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { openState, type Theme } from './fixtures';
 import { collectVisual } from './visual';
 
-const STATES = ['empty', 'results', 'picker', 'notice', 'error'] as const;
+const STATES = ['empty', 'results', 'picker', 'notice', 'error', 'coastal'] as const;
 const THEMES: Theme[] = ['light', 'dark'];
 
 for (const theme of THEMES) {

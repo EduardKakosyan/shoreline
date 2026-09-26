@@ -1,4 +1,4 @@
-/* Weather Now — static client, calls Open-Meteo directly. */
+/* Shoreline — static client, calls Open-Meteo directly (forecast, geocoding, marine). */
 (function () {
   "use strict";
 
@@ -6,9 +6,9 @@
   const WX_URL = "https://api.open-meteo.com/v1/forecast";
 
   const KEYS = {
-    theme: "wn.theme.v1",
-    units: "wn.units.v1",
-    recents: "wn.recents.v1",
+    theme: "sl.theme.v1",
+    units: "sl.units.v1",
+    recents: "sl.recents.v1",
   };
 
   const CONDITIONS = {
@@ -54,7 +54,7 @@
 
   const RECENTS_MAX = 5;
 
-  const HINTS = ["Lisbon", "Kyoto", "Reykjavík", "Nairobi", "Vancouver", "Oslo", "Cairo"];
+  const HINTS = ["Cascais", "Newquay", "Honolulu", "Sydney", "Halifax", "Cape Town", "Lisbon"];
 
   const $ = (id) => document.getElementById(id);
   const el = {
@@ -69,6 +69,9 @@
     error: document.querySelector('[data-testid="error"]'),
     errorText: $("error-text"),
     tryAgain: $("try-again"),
+    marineNote: document.querySelector('[data-testid="marine-unavailable"]'),
+    water: document.querySelector('[data-testid="water"]'),
+    waterBody: $("water-body"),
     current: document.querySelector('[data-testid="current-weather"]'),
     hourlySection: $("hourly-section"),
     strip: $("hour-strip"),
@@ -78,6 +81,7 @@
     clearRecents: $("clear-recents"),
     recentHint: $("recent-hint"),
     status: $("live-status"),
+    shell: document.querySelector(".shell"),
   };
 
   /* ---------------------------------------------------------------- storage */
@@ -100,6 +104,7 @@
   const state = {
     units: store.get(KEYS.units, "C") === "F" ? "F" : "C",
     weather: null,
+    marine: null,
     city: null,
     pending: null,
     searchToken: 0,
@@ -264,6 +269,7 @@
   function clearPanels() {
     setVisible(el.notice, false);
     setVisible(el.error, false);
+    setVisible(el.marineNote, false);
     setVisible(el.matchList, false);
     el.matchOptions.innerHTML = "";
   }
@@ -272,6 +278,8 @@
     setVisible(el.current, false);
     setVisible(el.hourlySection, false);
     setVisible(el.forecastSection, false);
+    setVisible(el.water, false);
+    el.waterBody.innerHTML = "";
     el.strip.innerHTML = "";
     el.dayList.innerHTML = "";
   }
@@ -292,13 +300,16 @@
   const deepInk = (overDeep) => (overDeep ? " icon--deep" : "");
   const themeIsDark = () => document.documentElement.dataset.theme === "dark";
 
-  function heroIcon(code, isDay, scene) {
+  function heroIcon(code, isDay, scene, size) {
     /* In the dark theme every sky reads deeper, so the mark there always takes
        the bright set; in the light theme only a night sky does. */
     const deep = themeIsDark() || scene.endsWith("night");
-    return `<span class="hero__icon${deep ? " icon--deep" : ""}">${Icons.weatherIcon(code, isDay, { size: 70 })}</span>`;
+    return `<span class="hero__icon${deep ? " icon--deep" : ""}">${Icons.weatherIcon(code, isDay, { size })}</span>`;
   }
 
+  /* A coastal hero is a band, not a slab: the verdicts under it are the headline, so
+     the sky gives them room. The temperature keeps its 64px+; the metrics become a
+     single row instead of a 2x2 grid. */
   function renderWeather(data) {
     const city = state.city;
     const cur = data.current || {};
@@ -308,15 +319,44 @@
     const scene = sceneOf(Number.isFinite(code) ? code : 3, isDay);
     const sunrise = (daily.sunrise && daily.sunrise[0]) || "";
     const sunset = (daily.sunset && daily.sunset[0]) || "";
+    const compact = isCoastalView();
 
-    el.current.innerHTML = `
-      <div class="hero" data-scene="${scene}">
+    const metrics = [
+      metricRow("humidity", "droplet", `${Math.round(Number(cur.relative_humidity_2m))}%`, "Humidity"),
+      metricRow("wind", "wind", windText(Number(cur.wind_speed_10m)), "Wind"),
+      metricRow("sunrise", "sunrise", String(sunrise).slice(11, 16), "Sunrise"),
+      metricRow("sunset", "sunset", String(sunset).slice(11, 16), "Sunset"),
+    ];
+
+    el.current.innerHTML = compact
+      ? `<div class="hero hero--band" data-scene="${scene}">
         <div class="hero__top">
           <div class="hero__place">
             <p class="hero__eyebrow">${isDay ? "Right now" : "Right now · night"}</p>
             <p class="location-name" data-testid="location-name">${esc(city.label)}</p>
           </div>
-          ${heroIcon(code, isDay, scene)}
+          ${heroIcon(code, isDay, scene, 52)}
+        </div>
+        <div class="hero__reading">
+          <div class="temp-block">
+            <div class="current-temperature" data-testid="current-temperature">${temp(Number(cur.temperature_2m), true)}</div>
+            <div class="current-condition" data-testid="current-condition">${esc(conditionText(code))}</div>
+            <div class="feels-line">
+              ${Icons.uiIcon("thermometer", { size: 15 })}
+              <span>Feels like</span>
+              <span class="feels-like" data-testid="feels-like">${temp(Number(cur.apparent_temperature), true)}</span>
+            </div>
+          </div>
+          <div class="hero__chips hero__chips--row">${metrics.join("")}</div>
+        </div>
+      </div>`
+      : `<div class="hero" data-scene="${scene}">
+        <div class="hero__top">
+          <div class="hero__place">
+            <p class="hero__eyebrow">${isDay ? "Right now" : "Right now · night"}</p>
+            <p class="location-name" data-testid="location-name">${esc(city.label)}</p>
+          </div>
+          ${heroIcon(code, isDay, scene, 70)}
         </div>
         <div class="hero__reading">
           <div class="temp-block">
@@ -328,19 +368,28 @@
               <span class="feels-like" data-testid="feels-like">${temp(Number(cur.apparent_temperature), true)}</span>
             </div>
           </div>
-          <div class="hero__chips">
-            ${metricRow("humidity", "droplet", `${Math.round(Number(cur.relative_humidity_2m))}%`, "Humidity")}
-            ${metricRow("wind", "wind", windText(Number(cur.wind_speed_10m)), "Wind")}
-            ${metricRow("sunrise", "sunrise", String(sunrise).slice(11, 16), "Sunrise")}
-            ${metricRow("sunset", "sunset", String(sunset).slice(11, 16), "Sunset")}
-          </div>
+          <div class="hero__chips">${metrics.join("")}</div>
         </div>
       </div>`;
     el.current.hidden = false;
 
     renderHourly(data);
     renderDaily(data);
+    renderWater();
     animateIn();
+  }
+
+  /* ------------------------------------------------------------- water section */
+  const isCoastalView = () => Water.isCoastal(state.marine);
+
+  function renderWater() {
+    if (!state.weather || !Water.isCoastal(state.marine)) {
+      el.water.hidden = true;
+      el.waterBody.innerHTML = "";
+      return;
+    }
+    Water.render(el.waterBody, state.weather, state.marine, state.units);
+    el.water.hidden = false;
   }
 
   /* Data bars are inline SVG: CSS paint on a DOM element counts as a background
@@ -512,6 +561,16 @@
     el.loading.setAttribute("aria-hidden", on ? "false" : "true");
   }
 
+  /* A failed sea request is not a failed forecast: it resolves, never rejects, so the
+     weather always gets to render and the note simply appears where the water would be. */
+  const marineRequest = (lat, lon) =>
+    fetch(Water.marineUrl(lat, lon))
+      .then((res) => {
+        if (!res.ok) throw new Error(`marine ${res.status}`);
+        return res.json();
+      })
+      .catch(() => ({ __failed: true }));
+
   /* -------------------------------------------------------------- open city */
   async function openCity(city, seq) {
     const token = ++state.searchToken;
@@ -522,16 +581,14 @@
     hideResults();
     setVisible(el.empty, false);
     setLoading(true);
+    state.marine = null;
     announce(`Loading forecast for ${city.label}`);
 
+    /* Both requests go out together; only the forecast gates the page. */
+    const marinePromise = marineRequest(city.lat, city.lon);
+    let data;
     try {
-      const data = await getJSON(forecastUrl(city.lat, city.lon));
-      if (token !== state.searchToken) return;
-      state.weather = data;
-      setLoading(false);
-      setVisible(el.error, false);
-      renderWeather(data);
-      announce(`Forecast for ${city.label} is ready`);
+      data = await getJSON(forecastUrl(city.lat, city.lon));
     } catch (err) {
       if (token !== state.searchToken) return;
       setLoading(false);
@@ -542,7 +599,23 @@
       }`;
       setVisible(el.error, true);
       announce(`Could not load the forecast for ${city.label}`);
+      return;
     }
+    if (token !== state.searchToken) return;
+    const marine = await marinePromise;
+    if (token !== state.searchToken) return;
+
+    state.weather = data;
+    state.marine = marine.__failed ? null : marine;
+    setLoading(false);
+    setVisible(el.error, false);
+    setVisible(el.marineNote, !!marine.__failed);
+    renderWeather(data);
+    announce(
+      isCoastalView()
+        ? `${city.label} is ready: today's outlook for the beach and for fishing, tides and the sea.`
+        : `Forecast for ${city.label} is ready`,
+    );
   }
 
   el.tryAgain.addEventListener("click", () => {

@@ -113,13 +113,54 @@
   --bolt-fill-hero: #ffc93c;
 
   /* Temperature gets one colour language, cold -> hot, deep enough to sit on a
-     card and on its hover surface without washing out. */
+     card and on its hover surface without washing out. Cool stays blue on both
+     themes: a 14°C day must not read as earth or autumn. */
   --temp-cold: #24599e;
-  --temp-cool: #1d668d;
+  --temp-cool: #14639b;
   --temp-mild: #6d520a;
   --temp-warm: #9c4413;
   --temp-hot: #932a2a;
   --rail-track: #ccd6e6;
+
+  /* Water section. Every panel is opaque and carries its own ink, so contrast is
+     measured per panel rather than assumed from the page tokens. */
+  --water-panel: #f4f8fc;
+  --water-panel-2: #eaf1f8;
+  --water-border: #c2d5e5;
+  --water-ink: #0f2237;
+  --water-muted: #44586f;
+  --water-accent: #0c6b80;
+  --water-glow: #dfeaf4;
+
+  --rating-good-bg: #e2f1e7;
+  --rating-good-border: #a5cbba;
+  --rating-good-ink: #0f6b3f;
+  --rating-good-soft: #2b5741;
+
+  /* "Fair" is deliberately the same blue-grey as the rest of the app: a warning
+     colour there would shout about an ordinary day. */
+  --rating-fair-bg: #eaf0f7;
+  --rating-fair-border: #c0cfdf;
+  --rating-fair-ink: #2b4670;
+  --rating-fair-soft: #405066;
+
+  --rating-poor-bg: #f6e9e7;
+  --rating-poor-border: #d3b0aa;
+  --rating-poor-ink: #8a2a24;
+  --rating-poor-soft: #5d322e;
+
+  --tide-line: #0c6b80;
+  --tide-area: #d3e6ef;
+  --tide-band: rgba(20, 90, 120, 0.1);
+  --tide-now: #b4560f;
+  --tide-label: #33465c;
+  --tide-kind: #6b7d92;
+
+  --moon-void: rgba(30, 60, 90, 0.14);
+  --moon-lit: #b8791b;
+  --moon-edge: rgba(30, 60, 90, 0.4);
+  --water-eye: #ffffff;
+  --moon-crater: rgba(60, 78, 104, 0.22);
 
   --shadow-1: 0 1px 2px rgba(14, 23, 40, 0.07), 0 8px 20px -12px rgba(14, 23, 40, 0.22);
   --shadow-2: 0 2px 6px rgba(14, 23, 40, 0.1), 0 18px 38px -18px rgba(14, 23, 40, 0.32);
@@ -179,6 +220,43 @@ html[data-theme="dark"] {
   --temp-warm: #ffb27a;
   --temp-hot: #ff9ea3;
   --rail-track: #33415c;
+
+  /* the water panels lift a step off the page, with their own ink */
+  --water-panel: #16233a;
+  --water-panel-2: #1d2c46;
+  --water-border: #32456a;
+  --water-ink: #e9f1fb;
+  --water-muted: #b3c6de;
+  --water-accent: #63d0e4;
+  --water-glow: #1b2b45;
+
+  --rating-good-bg: #10301f;
+  --rating-good-border: #2f6b4c;
+  --rating-good-ink: #85e0a8;
+  --rating-good-soft: #c2e6d2;
+
+  --rating-fair-bg: #1c2a44;
+  --rating-fair-border: #3c517a;
+  --rating-fair-ink: #a9c8ff;
+  --rating-fair-soft: #cfdcf0;
+
+  --rating-poor-bg: #35191b;
+  --rating-poor-border: #7c4448;
+  --rating-poor-ink: #ff9d99;
+  --rating-poor-soft: #f0c8c6;
+
+  --tide-line: #58c4da;
+  --tide-area: #1e3a55;
+  --tide-band: rgba(150, 200, 235, 0.13);
+  --tide-now: #ffb265;
+  --tide-label: #cdddf1;
+  --tide-kind: #9db2cc;
+
+  --moon-void: rgba(190, 210, 235, 0.16);
+  --moon-lit: #ffd98a;
+  --moon-edge: rgba(200, 218, 240, 0.5);
+  --water-eye: #10233c;
+  --moon-crater: rgba(20, 32, 52, 0.35);
 
   /* in the dark theme the night cue is a subtle depth step, one small lift
      below the card surface - not a hole punched in the page */
@@ -732,6 +810,73 @@ html[data-theme="dark"] .hero[data-scene$="day"] .metric {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+/* Coastal phones lead with the verdicts, so the sky becomes a band: the reading and
+   the four metrics share one row instead of stacking, and the card stops being a slab.
+   The temperature keeps its size — only the arrangement changes. */
+.hero--band {
+  padding: 14px 16px 15px;
+  gap: 12px;
+}
+
+.hero--band .hero__top {
+  align-items: center;
+  gap: 10px;
+}
+
+.hero--band .hero__icon {
+  width: 58px;
+  height: 58px;
+}
+
+.hero--band .location-name {
+  font-size: 1.125rem;
+}
+
+.hero--band .hero__reading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.hero--band .current-condition {
+  margin-top: 4px;
+  font-size: 1.0625rem;
+}
+
+.hero--band .feels-line {
+  margin-top: 6px;
+  font-size: 0.875rem;
+}
+
+.hero__chips--row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: 6px;
+}
+
+.hero__chips--row .metric {
+  min-height: 0;
+  padding: 6px 9px;
+  gap: 1px;
+  border-radius: 11px;
+}
+
+.hero__chips--row .metric__label {
+  font-size: 0.5625rem;
+  letter-spacing: 0.06em;
+}
+
+.hero__chips--row .metric__value {
+  font-size: 0.875rem;
+}
+
+.hero__chips--row .metric__icon {
+  width: 13px;
+  height: 13px;
 }
 
 /* .hero__reading is a plain column on a phone; the desktop rules put the
@@ -1403,6 +1548,8 @@ html[data-theme="dark"] .panel--error .btn:hover {
   --art-cloud: #ffffff;
   --art-cloud-2: #dfe7f3;
   --art-rain: #2f63c4;
+  --art-wave: #1d6f88;
+  --art-wave-2: #59a7bd;
   --art-spark: #74889f;
 }
 
@@ -1413,6 +1560,8 @@ html[data-theme="dark"] .empty-state {
   --art-cloud: #8ea5c7;
   --art-cloud-2: #43557a;
   --art-rain: #86adf7;
+  --art-wave: #63c7dd;
+  --art-wave-2: #3d8ba6;
   --art-spark: #66798f;
 }
 
@@ -1473,6 +1622,416 @@ html[data-theme="dark"] .empty-state {
   padding: 6px 8px 0;
   max-width: 46ch;
   margin: 0 auto;
+}
+
+/* ==========================================================================
+   The water section — the showpiece for a coastal place
+   Every panel here is opaque and carries its own ink; no alpha dimming, no
+   gradients under text, so contrast is one measured number per panel.
+   ========================================================================== */
+.water {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.water__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px;
+  min-height: 26px;
+}
+
+.water__title {
+  margin: 0;
+}
+
+.water__trend {
+  margin: 0 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px 5px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--water-panel);
+  border: 1px solid var(--water-border);
+  color: var(--water-ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.water__trend svg {
+  color: var(--water-accent);
+}
+
+.ratings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rating {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding: 11px 12px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--rating-fair-bg);
+  border: 1px solid var(--rating-fair-border);
+  border-top-width: 3px;
+  border-top-color: var(--rating-fair-ink);
+  color: var(--rating-fair-ink);
+  box-shadow: var(--shadow-1);
+}
+
+.rating--good {
+  background: var(--rating-good-bg);
+  border-color: var(--rating-good-border);
+  border-top-color: var(--rating-good-ink);
+  color: var(--rating-good-ink);
+}
+
+.rating--poor {
+  background: var(--rating-poor-bg);
+  border-color: var(--rating-poor-border);
+  border-top-color: var(--rating-poor-ink);
+  color: var(--rating-poor-ink);
+}
+
+.rating__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rating__mark {
+  display: grid;
+  place-items: center;
+  color: inherit;
+  --water-accent: currentColor;
+}
+
+.rating__label {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The rating never relies on colour alone: a word plus a distinct mark per state. */
+.rating__flag {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  color: inherit;
+}
+
+.rating__word {
+  font-size: 1.625rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.rating__reason {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--rating-fair-soft);
+  overflow-wrap: anywhere;
+}
+
+.rating--good .rating__reason {
+  color: var(--rating-good-soft);
+}
+
+.rating--poor .rating__reason {
+  color: var(--rating-poor-soft);
+}
+
+.water__disclaimer {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  max-width: 46ch;
+}
+
+.water__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 15px;
+  border-radius: var(--radius);
+  background: var(--water-panel);
+  border: 1px solid var(--water-border);
+  color: var(--water-ink);
+  box-shadow: var(--shadow-1);
+}
+
+.water__subtitle {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--water-muted);
+}
+
+/* ---------------- tide chart ---------------- */
+.tide-chart {
+  position: relative;
+  border-radius: var(--radius-sm);
+  background: var(--water-panel-2);
+  border: 1px solid var(--water-border);
+  padding: 2px;
+}
+
+.tide-chart__svg {
+  display: block;
+  width: 100%;
+  height: 136px;
+}
+
+.tide-chart__svg text {
+  font-family: inherit;
+}
+
+.tc-band {
+  fill: var(--tide-band);
+}
+
+.tc-bandlabel {
+  fill: var(--tide-kind);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.tc-zero {
+  stroke: var(--water-border);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.tc-area {
+  fill: var(--tide-area);
+}
+
+.tc-line {
+  fill: none;
+  stroke: var(--tide-line);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.tc-turn circle {
+  fill: var(--water-panel-2);
+  stroke: var(--tide-line);
+  stroke-width: 2;
+}
+
+.tc-turn text {
+  fill: var(--tide-label);
+  font-size: 10px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.tc-turnkind {
+  fill: var(--tide-kind);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.tc-hour {
+  fill: var(--tide-kind);
+  font-size: 9.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tc-now line {
+  stroke: var(--tide-now);
+  stroke-width: 1.6;
+  stroke-dasharray: 4 3;
+}
+
+.tc-now circle {
+  fill: var(--tide-now);
+  stroke: var(--water-panel-2);
+  stroke-width: 1.6;
+}
+
+.tc-now text {
+  fill: var(--tide-now);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+/* ---------------- today's turns ---------------- */
+.tide-events {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tide-event {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 9px;
+  border-radius: 11px;
+  background: var(--water-panel-2);
+  border: 1px solid var(--water-border);
+}
+
+.tide-event--none {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--water-muted);
+}
+
+.tide-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--water-muted);
+}
+
+.tide-kind svg {
+  color: var(--water-accent);
+}
+
+.tide-time {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--water-ink);
+}
+
+.tide-height {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--water-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.best-times {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--water-ink);
+}
+
+.tide-note {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--water-muted);
+}
+
+/* ---------------- sea state ---------------- */
+.sea__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sea__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  background: var(--water-panel-2);
+  border: 1px solid var(--water-border);
+}
+
+.sea__label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--water-muted);
+}
+
+.sea__label svg {
+  color: var(--water-accent);
+  flex: none;
+}
+
+.sea__value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--water-ink);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.sea__value--dir {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sea__value--moon {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+/* The arrow points the way the swell travels, i.e. away from the compass point. */
+.sea__arrow {
+  display: grid;
+  place-items: center;
+  color: var(--water-accent);
+  transform: rotate(calc(var(--dir, 0deg) + 180deg));
+}
+
+.sea__sub {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--water-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Calm note for a failed sea request — deliberately not the error palette. */
+.panel--calm {
+  margin: 0;
+  padding: 14px 18px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 /* ==========================================================================

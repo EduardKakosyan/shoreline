@@ -2,6 +2,7 @@ import type { Page, Route } from '@playwright/test';
 
 export const GEO_HOST = 'geocoding-api.open-meteo.com';
 export const WX_HOST = 'api.open-meteo.com';
+export const MARINE_HOST = 'marine-api.open-meteo.com';
 
 export const DAY_DATES = ['2026-09-24', '2026-09-25', '2026-09-26', '2026-09-27', '2026-09-28'];
 export const WEEKDAYS = ['Thu', 'Fri', 'Sat', 'Sun', 'Mon'];
@@ -37,6 +38,8 @@ export const MATCHES: Record<string, Match> = {
   madrid: { name: 'Madrid', admin1: 'Community of Madrid', country: 'Spain', lat: 40.4165, lon: -3.7026 },
   lisbon: { name: 'Lisbon', admin1: 'Lisbon District', country: 'Portugal', lat: 38.71667, lon: -9.13333 },
   cairo: { name: 'Cairo', admin1: 'Cairo Governorate', country: 'Egypt', lat: 30.0601, lon: 31.2466 },
+  cascais: { name: 'Cascais', admin1: 'Lisbon District', country: 'Portugal', lat: 38.69791, lon: -9.42146 },
+  newquay: { name: 'Newquay', admin1: 'England', country: 'United Kingdom', lat: 50.41557, lon: -5.07319 },
 };
 
 export const CITIES: Record<string, CityFixture> = {
@@ -139,10 +142,176 @@ export const CITIES: Record<string, CityFixture> = {
       temperature_2m_min: [24.7, 25.3, 24.1, 23.6, 22.9],
     },
   },
+  cascais: {
+    lat: 38.69791, lon: -9.42146,
+    current: { temperature_2m: 26.4, relative_humidity_2m: 58, weather_code: 0, wind_speed_10m: 9.8 },
+    daily: {
+      weather_code: [0, 0, 1, 2, 1],
+      temperature_2m_max: [27.1, 26.5, 25.8, 24.9, 25.3],
+      temperature_2m_min: [18.2, 18.0, 17.6, 17.1, 17.4],
+    },
+  },
+  newquay: {
+    lat: 50.41557, lon: -5.07319,
+    current: { temperature_2m: 14.2, relative_humidity_2m: 91, weather_code: 63, wind_speed_10m: 42.5 },
+    daily: {
+      weather_code: [63, 61, 3, 2, 80],
+      temperature_2m_max: [15.8, 16.4, 17.2, 17.9, 16.1],
+      temperature_2m_min: [11.2, 11.9, 12.4, 12.8, 12.0],
+    },
+  },
 };
+
+/* --------------------------------------------------------------------------
+ * Marine fixtures (marine-api.open-meteo.com). Only the coastal keys below have
+ * sea data; every other fixture location answers like an inland point: HTTP 200
+ * with null values, which is what the live API does away from the sea.
+ * -------------------------------------------------------------------------- */
+
+export interface MarineFixture {
+  current: {
+    wave_height: number; wave_direction: number; wave_period: number;
+    swell_wave_height: number; swell_wave_direction: number; swell_wave_period: number;
+    sea_surface_temperature: number;
+  };
+  /** Semi-diurnal tide: amplitude (m), hour of a high water on day 0, diurnal skew (m). */
+  tide: { amplitude: number; highAt: number; skew: number };
+}
+
+export const MARINE: Record<string, MarineFixture> = {
+  cascais: {
+    current: {
+      wave_height: 0.6, wave_direction: 285, wave_period: 9.4,
+      swell_wave_height: 0.5, swell_wave_direction: 290, swell_wave_period: 11.2,
+      sea_surface_temperature: 20.6,
+    },
+    tide: { amplitude: 1.33, highAt: 13.3, skew: 0.12 },
+  },
+  newquay: {
+    current: {
+      wave_height: 3.4, wave_direction: 265, wave_period: 13.6,
+      swell_wave_height: 3.1, swell_wave_direction: 240, swell_wave_period: 14.1,
+      sea_surface_temperature: 15.3,
+    },
+    tide: { amplitude: 2.62, highAt: 10.4, skew: 0.2 },
+  },
+  lisbon: {
+    current: {
+      wave_height: 1.2, wave_direction: 300, wave_period: 11.6,
+      swell_wave_height: 1.1, swell_wave_direction: 315, swell_wave_period: 12.3,
+      sea_surface_temperature: 19.4,
+    },
+    tide: { amplitude: 1.2, highAt: 3.7, skew: 0.1 },
+  },
+  sydney: {
+    current: {
+      wave_height: 1.8, wave_direction: 150, wave_period: 10.2,
+      swell_wave_height: 1.6, swell_wave_direction: 135, swell_wave_period: 11.0,
+      sea_surface_temperature: 18.1,
+    },
+    tide: { amplitude: 0.8, highAt: 5.1, skew: 0.08 },
+  },
+};
+
+const TIDE_PERIOD_H = 12.42;
+
+/** Hourly sea level (m, 2 decimals) over the 5 fixture days: 120 values from DAY_DATES[0]T00:00. */
+export function seaLevelSeries(key: string): number[] {
+  const { amplitude, highAt, skew } = MARINE[key].tide;
+  return Array.from({ length: 120 }, (_, h) => {
+    const x = (2 * Math.PI * (h - highAt)) / TIDE_PERIOD_H;
+    return Math.round((amplitude * Math.cos(x) + skew * Math.cos(x / 2)) * 100) / 100;
+  });
+}
+
+export interface TideEvent { kind: 'High' | 'Low'; time: string; heightM: number }
+
+/**
+ * Today's tide turns, as the brief defines them: an hourly slot on DAY_DATES[0] (never the
+ * very first slot of the series) whose sea level is strictly above (High) or strictly below
+ * (Low) both neighbouring hours. Time is the slot's HH:00.
+ */
+export function tideEventsToday(key: string): TideEvent[] {
+  const v = seaLevelSeries(key);
+  const out: TideEvent[] = [];
+  for (let i = 1; i < 24; i++) {
+    const time = `${String(i).padStart(2, '0')}:00`;
+    if (v[i] > v[i - 1] && v[i] > v[i + 1]) out.push({ kind: 'High', time, heightM: v[i] });
+    if (v[i] < v[i - 1] && v[i] < v[i + 1]) out.push({ kind: 'Low', time, heightM: v[i] });
+  }
+  return out;
+}
+
+/** "Rising" or "Falling": the sea level at the current hour against the next hour. */
+export function tideTrend(key: string): 'Rising' | 'Falling' {
+  const v = seaLevelSeries(key);
+  const i = Number(CURRENT_TIME.slice(11, 13));
+  return v[i + 1] > v[i] ? 'Rising' : 'Falling';
+}
+
+export const metres = (m: number) => `${m.toFixed(1)} m`;
+export const feet = (m: number) => `${(m * 3.28084).toFixed(1)} ft`;
+export const COMPASS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+export const compass = (deg: number) => COMPASS[Math.round(deg / 45) % 8];
+
+/** Moon phase name for DAY_DATES[0] at 12:00 UTC, by the brief's formula. */
+export function moonPhaseToday(): string {
+  const NAMES = ['New moon', 'Waxing crescent', 'First quarter', 'Waxing gibbous',
+    'Full moon', 'Waning gibbous', 'Last quarter', 'Waning crescent'];
+  const ref = Date.UTC(2000, 0, 6, 18, 14);
+  const t = Date.parse(`${DAY_DATES[0]}T12:00:00Z`);
+  const days = (t - ref) / 86_400_000;
+  const frac = ((days / 29.530588853) % 1 + 1) % 1;
+  return NAMES[Math.floor(frac * 8 + 0.5) % 8];
+}
+
+const MARINE_CURRENT = ['wave_height', 'wave_direction', 'wave_period', 'swell_wave_height',
+  'swell_wave_direction', 'swell_wave_period', 'sea_surface_temperature', 'sea_level_height_msl'];
+const MARINE_HOURLY = ['wave_height', 'sea_level_height_msl'];
+
+/**
+ * Marine answer for a location. Like the live API, it only carries the variables the
+ * request asked for in `current=` and `hourly=`, and all values are null inland.
+ */
+function marineJson(lat: number, lon: number, key: string | undefined, params: URLSearchParams) {
+  const coastal = key !== undefined && key in MARINE;
+  const wanted = (name: string) => (params.get(name) ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  const level = coastal ? seaLevelSeries(key!) : null;
+  const nowIndex = Number(CURRENT_TIME.slice(11, 13));
+  const currentAll: Record<string, number | null> = coastal
+    ? { ...MARINE[key!].current, sea_level_height_msl: level![nowIndex] }
+    : Object.fromEntries(MARINE_CURRENT.map((k) => [k, null]));
+  const time = DAY_DATES.flatMap((date) => Array.from({ length: 24 }, (_, h) => `${date}T${pad(h)}:00`));
+  const hourlyAll: Record<string, (number | null)[]> = {
+    wave_height: time.map((_, h) =>
+      coastal ? Math.round(MARINE[key!].current.wave_height * (0.85 + 0.3 * HOUR_WEIGHTS[h % 24]) * 100) / 100 : null),
+    sea_level_height_msl: coastal ? level! : time.map(() => null),
+  };
+  const current: Record<string, unknown> = { time: CURRENT_TIME, interval: 900 };
+  const current_units: Record<string, string> = { time: 'iso8601', interval: 'seconds' };
+  for (const k of wanted('current')) {
+    if (!MARINE_CURRENT.includes(k)) continue;
+    current[k] = currentAll[k];
+    current_units[k] = k.includes('direction') ? '°' : k.includes('period') ? 's'
+      : k === 'sea_surface_temperature' ? '°C' : 'm';
+  }
+  const hourly: Record<string, unknown> = { time };
+  const hourly_units: Record<string, string> = { time: 'iso8601' };
+  for (const k of wanted('hourly')) {
+    if (!MARINE_HOURLY.includes(k)) continue;
+    hourly[k] = hourlyAll[k];
+    hourly_units[k] = 'm';
+  }
+  return {
+    latitude: lat, longitude: lon, generationtime_ms: 0.1, utc_offset_seconds: 0,
+    timezone: 'GMT', timezone_abbreviation: 'GMT', elevation: 0,
+    current_units, current, hourly_units, hourly,
+  };
+}
 
 const GEO_PATH = '/v1/search';
 const WX_PATH = '/v1/forecast';
+const MARINE_PATH = '/v1/marine';
 
 /** Deterministic day-part weights used to synthesise the hourly series. */
 const HOUR_WEIGHTS = [0.10, 0.06, 0.03, 0.01, 0.00, 0.02, 0.08, 0.18, 0.32, 0.47, 0.62, 0.77,
@@ -264,10 +433,13 @@ export interface FixtureOptions {
   failingOnce?: string[];
   /** Delay in ms before the forecast is fulfilled - exercises loading skeletons. */
   forecastDelayMs?: number;
+  /** Keys whose marine request always answers HTTP 500. */
+  failingMarine?: string[];
 }
 
 /**
- * Intercept both Open-Meteo hosts with fixed fixture JSON, so no check depends on live weather.
+ * Intercept all three Open-Meteo hosts (geocoding, forecast, marine) with fixed fixture JSON, so no
+ * check depends on live weather or sea data.
  *  - search: maps a lower-cased query to fixture match keys; an empty array means "no results".
  *    A query missing from the map also answers with no results. A query that carries a trailing
  *    region/country ("Cairo, Cairo Governorate, Egypt") is also matched on its first segment.
@@ -317,6 +489,17 @@ export async function installOpenMeteoFixtures(page: Page, opts: FixtureOptions 
       return fulfil(route, 500, { error: 'forecast service unavailable' });
     }
     return fulfil(route, 200, weatherJson(CITIES[key]));
+  });
+
+  const failingMarine = opts.failingMarine ?? [];
+  await page.route(new RegExp(`^https?://${MARINE_HOST}/`), (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname !== MARINE_PATH) return fulfil(route, 404, { error: 'unexpected path' });
+    const lat = Number(url.searchParams.get('latitude'));
+    const lon = Number(url.searchParams.get('longitude'));
+    const key = keyFor(lat, lon);
+    if (key && failingMarine.includes(key)) return fulfil(route, 500, { error: 'marine service unavailable' });
+    return fulfil(route, 200, marineJson(lat, lon, key, url.searchParams));
   });
 }
 
@@ -382,11 +565,11 @@ export async function setTheme(page: Page, theme: 'light' | 'dark') {
   }
 }
 
-export type UIState = 'empty' | 'results' | 'picker' | 'notice' | 'error';
+export type UIState = 'empty' | 'results' | 'picker' | 'notice' | 'error' | 'coastal';
 export type Theme = 'light' | 'dark';
 
 /**
- * Put the app into one of its five visual states, in the given theme, with the
+ * Put the app into one of its six visual states, in the given theme, with the
  * unit toggle at Celsius. The theme is set through the app's own "Theme" toggle
  * (no colorScheme emulation), so every visual check runs in both app themes.
  * Uses the app's own storage keys, so the state is exactly what a user sees.
@@ -401,7 +584,7 @@ export async function openState(
     search: {
       london: ['london_gb', 'london_ca', 'london_oh', 'london_ky', 'london_ar'],
       atlantis: [],
-      ...searchMapForKeys(KEY6),
+      ...searchMapForKeys([...KEY6, 'cascais']),
     },
     failingForecasts: state === 'error' ? ['london_ky'] : undefined,
     failingOnce: opts.failingOnce,
@@ -429,6 +612,12 @@ export async function openState(
       .filter({ hasText: 'London, Kentucky, United States' })
       .click({ timeout: 10_000 });
     await page.getByTestId('error').waitFor({ state: 'visible', timeout: 15_000 });
+    return;
+  }
+  if (state === 'coastal') {
+    await typeCity(page, 'Cascais');
+    await page.getByTestId('current-weather').waitFor({ state: 'visible', timeout: 15_000 });
+    await page.getByTestId('water').waitFor({ state: 'visible', timeout: 15_000 });
     return;
   }
   await typeCity(page, 'Paris');

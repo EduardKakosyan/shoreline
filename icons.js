@@ -20,6 +20,9 @@
     "M7.6 18.5h9.1a3.4 3.4 0 0 0 .4-6.8 5.1 5.1 0 0 0-9.8-1.2 3.9 3.9 0 0 0 .3 8z";
   const smallCloudPath =
     "M8.4 17.6h7.4a2.9 2.9 0 0 0 .3-5.8 4.4 4.4 0 0 0-8.4-1 3.4 3.4 0 0 0 .7 6.8z";
+  /* One small wisp, low and to the right: "mainly clear" has room for the sky. */
+  const wispPath =
+    "M11.9 18.9h6.2a2.3 2.3 0 0 0 .2-4.6 3.4 3.4 0 0 0-6.4-.8 2.7 2.7 0 0 0 0 5.4z";
 
   const sun = (cx, cy, r) =>
     `<g class="ic-sun">` +
@@ -30,6 +33,18 @@
   const moon = (cx, cy, r) =>
     `<path d="M${cx + r * 0.55} ${cy - r * 0.95}a${r} ${r} 0 1 0 ${r * 0.72} ${r * 1.62} ` +
     `a${r * 0.82} ${r * 0.82} 0 1 1 ${-r * 0.72} ${-r * 0.62}z" fill="var(--moon-fill, var(--icon-accent, currentColor))" stroke="none" />`;
+
+  /* A moon disc with two faint maria. Used wherever a moon sits *behind* a cloud: a
+     crescent there reads as a drawing error, because the cloud eats part of the hook
+     and leaves a fragment floating above it. A disc occluded on one side is
+     unambiguous, and it is the same grammar as the sun behind a cloud by day. */
+  const moonDisc = (cx, cy, r) =>
+    `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--moon-fill, var(--icon-accent, currentColor))" stroke="none" />` +
+    `<circle cx="${(cx - r * 0.3).toFixed(2)}" cy="${(cy - r * 0.28).toFixed(2)}" r="${(r * 0.24).toFixed(2)}" fill="var(--moon-crater, rgba(48,66,102,0.28))" stroke="none" />` +
+    `<circle cx="${(cx + r * 0.34).toFixed(2)}" cy="${(cy + r * 0.34).toFixed(2)}" r="${(r * 0.16).toFixed(2)}" fill="var(--moon-crater, rgba(48,66,102,0.28))" stroke="none" />`;
+
+  const cloud = (path, opacity) =>
+    `<path d="${path}" fill="var(--ic-fill, currentColor)" fill-opacity="${opacity}" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />`;
 
   const drops = (n, y0, spread) => {
     const xs = n === 2 ? [9.8, 14.6] : n === 3 ? [8.6, 12, 15.4] : [7.6, 10.5, 13.5, 16.4];
@@ -54,15 +69,15 @@
     "clear-day": () => sun(12, 12, 4.6),
     "clear-night": () => moon(13.2, 12, 5.4),
 
-    "partly-day": () =>
-      sun(8.4, 7.6, 3.1) +
-      `<path d="${cloudPath}" fill="var(--ic-fill, currentColor)" fill-opacity="0.14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />`,
-    "partly-night": () =>
-      moon(8.9, 7.4, 3.4) +
-      `<path d="${cloudPath}" fill="var(--ic-fill, currentColor)" fill-opacity="0.14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />`,
+    /* 1 "Mainly clear" — mostly sky: a big crescent/sun with one small wisp low down. */
+    "mainly-day": () => sun(10, 9.4, 4.4) + cloud(wispPath, 0.12),
+    "mainly-night": () => moon(10.2, 10.4, 6) + cloud(wispPath, 0.12),
 
-    cloudy: () =>
-      `<path d="${cloudPath}" fill="var(--ic-fill, currentColor)" fill-opacity="0.14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />`,
+    /* 2 "Partly cloudy" — the mark sits *behind* the cloud. */
+    "partly-day": () => sun(8.4, 7.6, 3.1) + cloud(cloudPath, 0.14),
+    "partly-night": () => moonDisc(9.6, 8.2, 3.5) + cloud(cloudPath, 0.14),
+
+    cloudy: () => cloud(cloudPath, 0.14),
     cloudyAlt: () =>
       `<path d="M6.2 15.8h6.9a2.7 2.7 0 0 0 .3-5.4 4.1 4.1 0 0 0-7.8-.9 3.2 3.2 0 0 0 .6 6.3z" fill="var(--ic-fill, currentColor)" fill-opacity="0.1" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />` +
       `<path d="M13.2 19.6h4.9a2.2 2.2 0 0 0 .2-4.4 3.3 3.3 0 0 0-6.3-.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.65" />`,
@@ -114,6 +129,89 @@
     empty: `<circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.35"/>`,
   };
 
+  /* Water marks: read at a glance next to a verdict word, so each has a distinct
+     silhouette rather than a shared "waves" glyph. */
+  const WATER = {
+    /* sun over two short, gentle waves — a calm beach */
+    beach: () =>
+      `<circle cx="12" cy="7.6" r="3.3" fill="var(--water-accent, currentColor)" stroke="none"/>` +
+      `<path d="M4 15.4c1.7-1.6 3.4-1.6 5.1 0s3.4 1.6 5.1 0 3.4-1.6 5.1 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>` +
+      `<path d="M4 19.6c1.7-1.6 3.4-1.6 5.1 0s3.4 1.6 5.1 0 3.4-1.6 5.1 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.6"/>`,
+    /* a fish riding a wave — fishing */
+    fish: () =>
+      `<path d="M4.2 12c2.6-3.4 6.1-5.1 9.4-5.1 2.4 0 4 1.7 4 5.1s-1.6 5.1-4 5.1c-3.3 0-6.8-1.7-9.4-5.1z" fill="var(--water-accent, currentColor)" stroke="none"/>` +
+      `<path d="M17.6 12 21.4 8.6v6.8L17.6 12z" fill="var(--water-accent, currentColor)" stroke="none"/>` +
+      `<circle cx="8.6" cy="10.9" r="1.05" fill="var(--water-eye, #fff)" stroke="none"/>` +
+      `<path d="M11.4 12c1 1.4 2.3 2.2 3.6 2.6" stroke="var(--water-eye, #fff)" stroke-width="1.1" stroke-linecap="round" fill="none" opacity="0.7"/>`,
+    /* a rising tide against a level line */
+    tide: () =>
+      `<path d="M3.4 14.6c1.9-2 3.7-2 5.6 0s3.7 2 5.6 0 3.7-2 5.6 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/>` +
+      `<path d="M12 3.6v6.4M9 6.8 12 9.9l3-3.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+    waves: () =>
+      `<path d="M3.4 10.2c1.9-2.2 3.7-2.2 5.6 0s3.7 2.2 5.6 0 3.7-2.2 5.6 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/>` +
+      `<path d="M3.4 15.4c1.9-2.2 3.7-2.2 5.6 0s3.7 2.2 5.6 0 3.7-2.2 5.6 0" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none" opacity="0.65"/>`,
+    /* a longer, single swell — the deep-water wave */
+    swell: () =>
+      `<path d="M3 15.6c2.4-6.6 6-6.6 8.4-2.2 1.6 2.9 3.4 3.6 5.4 2.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none"/>` +
+      `<path d="M3 19.8h18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" opacity="0.55"/>`,
+    /* a buoy: sea temperature / at the water */
+    thermo: () =>
+      `<path d="M14.2 13.2V5.4a2.2 2.2 0 1 0-4.4 0v7.8a4.2 4.2 0 1 0 4.4 0z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>` +
+      `<path d="M12 16.4v-4.8" stroke="var(--water-accent, currentColor)" stroke-width="2.4" stroke-linecap="round"/>`,
+    arrow: () =>
+      `<path d="M12 3.6 12 20.4M12 3.6 7.4 8.4M12 3.6l4.6 4.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+    up: () =>
+      `<path d="M12 19V5.6M6.6 11 12 5.6 17.4 11" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+    down: () =>
+      `<path d="M12 5v13.4M6.6 13 12 18.4 17.4 13" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+    check: () =>
+      `<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m7.9 12.3 2.8 2.8 5.4-5.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+    tilt: () =>
+      `<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M8.4 14.4 15.6 9.6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M8.6 9.6h.02M15.4 14.4h.02" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>`,
+    cross: () =>
+      `<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M9 9l6 6M15 9l-6 6" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" fill="none"/>`,
+    anchor: () =>
+      `<circle cx="12" cy="4.9" r="2.1" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v12.4M7.2 11H16.8M4.2 14.2c0 3.6 3.4 5.4 7.8 5.4s7.8-1.8 7.8-5.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>`,
+  };
+
+  /* Moon phase marks. The disc is drawn as a void plus the lit part, so the glyph
+     beside the name *is* the phase: right side filling from new (waxing), left side
+     emptying toward new (waning). Arc directions are chosen for SVG's y-down space,
+     where sweep=1 runs clockwise (top -> right -> bottom). */
+  const moonPhase = (name) => {
+    const cx = 12;
+    const cy = 12;
+    const r = 8.2;
+    const top = (cy - r).toFixed(2);
+    const bottom = (cy + r).toFixed(2);
+    const half = (r * 2).toFixed(2);
+    const side = (which) => `M${cx} ${top}a${r} ${r} 0 0 ${which === "right" ? 1 : 0} 0 ${half}z`;
+    /* lit = a semicircle on one side, plus/minus an inner arc that fattens or thins it */
+    const gibbous = (which, inner) =>
+      `M${cx} ${top}a${r} ${r} 0 0 ${which === "right" ? 1 : 0} 0 ${half}` +
+      `a${inner} ${r} 0 0 ${which === "right" ? 1 : 0} 0 ${-half}z`;
+    const crescent = (which, inner) =>
+      `M${cx} ${top}a${r} ${r} 0 0 ${which === "right" ? 1 : 0} 0 ${half}` +
+      `a${inner} ${r} 0 0 ${which === "right" ? 0 : 1} 0 ${-half}z`;
+    const thin = (r * 0.66).toFixed(2);
+
+    const lit = {
+      'New moon': '',
+      'Waxing crescent': crescent('right', thin),
+      'First quarter': side('right'),
+      'Waxing gibbous': gibbous('right', thin),
+      'Full moon': `M${(cx - r).toFixed(2)} ${cy}a${r} ${r} 0 0 1 ${half} 0a${r} ${r} 0 0 1 ${-half} 0z`,
+      'Waning gibbous': gibbous('left', thin),
+      'Last quarter': side('left'),
+      'Waning crescent': crescent('left', thin),
+    }[name];
+
+    return (
+      `<circle cx="${cx}" cy="${cy}" r="${r}" fill="var(--moon-void, rgba(125,145,175,0.25))" stroke="var(--moon-edge, currentColor)" stroke-width="1.1"/>` +
+      (lit ? `<path d="${lit}" fill="var(--moon-lit, currentColor)" stroke="none"/>` : '')
+    );
+  };
+
   function svg(inner, opts) {
     const o = opts || {};
     const size = o.size ? ` width="${o.size}" height="${o.size}"` : "";
@@ -126,7 +224,7 @@
     const day = isDay !== 0;
     let fn;
     if (code === 0) fn = day ? ICONS["clear-day"] : ICONS["clear-night"];
-    else if (code === 1) fn = day ? ICONS["partly-day"] : ICONS["partly-night"];
+    else if (code === 1) fn = day ? ICONS["mainly-day"] : ICONS["mainly-night"];
     else if (code === 2) fn = day ? ICONS["partly-day"] : ICONS["partly-night"];
     else if (code === 3) fn = ICONS.cloudy;
     else if (code === 45 || code === 48) fn = ICONS.fog;
@@ -144,5 +242,14 @@
     return svg(UI[name] || UI.globe, opts);
   }
 
-  window.Icons = { weatherIcon, uiIcon, svg };
+  function waterIcon(name, opts) {
+    const fn = WATER[name];
+    return svg(typeof fn === "function" ? fn() : UI.globe, opts);
+  }
+
+  function moonIcon(name, opts) {
+    return svg(moonPhase(name), opts);
+  }
+
+  window.Icons = { weatherIcon, uiIcon, waterIcon, moonIcon, svg };
 })();
