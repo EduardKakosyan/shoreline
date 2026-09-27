@@ -158,3 +158,25 @@ suite can run locally — **never tune it to make it pass**. Run it with
 | `chart-collide.js` | no two words in the tide chart overlap, no label leaves the box, **every turn the app lists keeps its time on the chart**, and the high/low disc-vs-ring marks stay distinguishable (fills differ, high drawn larger) — sweeps the tide *phase* over the day x 2 themes, since one fixed fixture hides the collisions (Sydney's arrangement collides) |
 | `rail-hue.js` | the temperature rail reads cool when it is cool: cool buckets never in the olive/brown hue band, warm stays warm, all five buckets actually paint, rail >=3:1 on card and track, numbers >=4.5:1, and a day is coloured by the **printed** temperature |
 | `first-screen-read.js` | reads the above-the-fold text of a place in visual order, both themes, so the coastal copy and reading order can be reviewed like a screenshot |
+
+## Tide-chart labels vs the curve (operator review #2, small item 4)
+
+`audit/chart-collide.js` swept the fixtures and found nothing, because the operator's
+two examples (Sydney 08:00, Honolulu 03:00) only happen on **live** data, where a
+plateau pins several hours to the same height. `audit/chart-live.js` measures the gap
+between each turn's time and the drawn path on the real sea — pre-fix it reported 30
+labels sitting on the curve across Cascais/Sydney/Honolulu/Newquay/Cape Town, now clean.
+
+Two traps when measuring the curve:
+- Map user space to the screen through **the SVG's** origin. A path's own bounding box
+  starts wherever the water starts, so using it shifts every sample down by the water's
+  height and reports a clean chart as broken (or the reverse). Cost me a false
+  "20 problems" run.
+- `boxOf()` estimates a text box from the font size. A 1-2px optimistic estimate *is*
+  the "the label touches the line" complaint, so inflate the box (3px) before comparing.
+  With no padding, Sydney 02:00 cleared by 0.4px and still read badly.
+
+`curveClear` now rejects any label candidate that overlaps the curve's vertical span
+across its own x-range, and `labelTurns` escapes ±20px as well as sideways. A turn
+pinned at the top of the plot has no room above it at all, so "flip to the other side"
+is not enough — the escape has to go *below*, several steps if needed.

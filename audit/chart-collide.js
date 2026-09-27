@@ -59,6 +59,33 @@ const MEASURE = `(() => {
   const lo = markOf('low');
   const legend = !!document.querySelector('.tide-legend');
 
+  /* A turn's time must not sit on the water. The curve is the thing the chart is
+     * about, and the operator named it directly (Sydney's "08:00", Honolulu's
+     * "03:00"): sample the drawn path across each label's own x-span and require the
+     * label to sit clear of every sample, above or below. */
+  const line0 = svg.querySelector('path.tc-line');
+  const curveSamples = [];
+  if (line0) {
+    /* user space maps to the screen through the SVG's origin, not the path's bbox */
+    const base = svg.getBoundingClientRect();
+    const len = line0.getTotalLength();
+    for (let i = 0; i <= 600; i++) {
+      const p = line0.getPointAtLength((len * i) / 600);
+      curveSamples.push({ x: base.x + p.x, y: base.y + p.y });
+    }
+  }
+  const onCurve = [];
+  for (const t of texts) {
+    if (!/\d\d:\d\d/.test(t.s)) continue;
+    const near = curveSamples.filter((p) => p.x >= t.x && p.x <= t.right);
+    if (!near.length) continue;
+    const top = Math.min(...near.map((p) => p.y));
+    const bot = Math.max(...near.map((p) => p.y));
+    const gapAbove = t.bottom <= top ? top - t.bottom : -1;
+    const gapBelow = t.y >= bot ? t.y - bot : -1;
+    const gap = Math.max(gapAbove, gapBelow);
+    if (gap < 1.5) onCurve.push(t.s + ' sits on the curve (closest sample ' + gap.toFixed(1) + 'px from the box, curve spans y' + top.toFixed(0) + '-' + bot.toFixed(0) + ', label y' + t.y.toFixed(0) + '-' + t.bottom.toFixed(0) + ')');
+  }
   /* every turn the app reports must be readable on the chart, not just dotted */
   const turnDots = [...svg.querySelectorAll('g.tc-turn')];
   const turnTimes = turnDots.map((g) => (g.querySelector('text') || {}).textContent || '');
@@ -69,6 +96,7 @@ const MEASURE = `(() => {
     words: texts.length,
     overlaps,
     spill,
+    onCurve,
     missing: tileTimes.filter((t) => !turnTimes.includes(t)),
     turns: turnDots.length,
     hi, lo, legend,
@@ -117,6 +145,7 @@ const MEASURE = `(() => {
         }
         r.overlaps.forEach((o) => problems.push(`${place} phase ${phase} ${theme}: ${o}`));
         r.spill.forEach((s) => problems.push(`${place} phase ${phase} ${theme}: ${s}`));
+        r.onCurve.forEach((s) => problems.push(`${place} phase ${phase} ${theme}: ${s}`));
         r.missing.forEach((t) => problems.push(`${place} phase ${phase} ${theme}: turn ${t} has no time on the chart`));
         if (r.turns > 0) {
           if (!r.hi || !r.lo) problems.push(`${place} phase ${phase} ${theme}: no high or low mark to distinguish`);
@@ -129,7 +158,7 @@ const MEASURE = `(() => {
         }
         if (r.words < 3) problems.push(`${place} phase ${phase} ${theme}: only ${r.words} words in the chart`);
         lines.push(
-          `${place}/${String(phase).padStart(2, '0')}h ${theme}: ${r.words} words, ${r.overlaps.length} overlap(s), curve ${r.curveW}/${r.hostW}px`,
+          `${place}/${String(phase).padStart(2, '0')}h ${theme}: ${r.words} words, ${r.overlaps.length} overlap(s), ${r.onCurve.length} on the curve, curve ${r.curveW}/${r.hostW}px`,
         );
         await page.close();
       }

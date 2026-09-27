@@ -458,8 +458,14 @@
      High and low are carried instead by a filled disc and a hollow ring, and by
      which side of the curve their time sits on; the tiles under the chart spell
      each turn out in full. A time is nudged to the other side of the curve, then
-     offset, and only dropped as a last resort — a missing label beats a pile. */
-  function labelTurns(m, x, y, cl, top, bottom, W, occupied) {
+     offset, and only dropped as a last resort — a missing label beats a pile.
+     `curveClear` answers whether a candidate box keeps clear of the drawn curve,
+     which is the other thing a reader notices (the operator, on Sydney's 08:00 and
+     Honolulu's 03:00: "a few chart labels sit on top of their dots or on the
+     curve"). A turn's own dot is on the curve, so the side that matches its kind is
+     clear by construction — but a High pushed BELOW its peak, or a Low above its
+     trough, lands right where the water is. */
+  function labelTurns(m, x, y, cl, top, bottom, W, occupied, curveClear) {
     const placed = occupied.slice();
     const out = [];
     for (const t of m.turns) {
@@ -469,8 +475,17 @@
       const w = String(t.time).length * TIME_PX * 0.66;
       const cx = cl(mx, 2 + w / 2, W - 2 - w / 2);
       const boxAt = (up, dy) => boxOf(t.time, cx, cl(my + (up ? -10 : 16) + dy, top + 8, bottom - 2), TIME_PX);
-      const tries = [boxAt(high, 0), boxAt(!high, 0), boxAt(high, -10), boxAt(!high, 10), boxAt(high, 10), boxAt(!high, -10)];
-      const chosen = tries.find((b) => !hits(b, placed));
+      /* Nudge further as well as sideways: a turn pinned at the very top of the plot
+         has no room above it at all, so the escape is several steps below. */
+      const tries = [
+        boxAt(high, 0), boxAt(!high, 0),
+        boxAt(high, -10), boxAt(!high, 10),
+        boxAt(high, 10), boxAt(!high, -10),
+        boxAt(!high, 20), boxAt(!high, -20),
+        boxAt(high, 20), boxAt(high, -20),
+      ];
+      const clear = (b) => !hits(b, placed) && curveClear(b);
+      const chosen = tries.find(clear);
       if (chosen) placed.push(chosen);
       const label = chosen
         ? `<text x="${cx.toFixed(1)}" y="${(chosen.y2 - TIME_PX * 0.22).toFixed(1)}" text-anchor="middle">${t.time}</text>`
@@ -483,6 +498,36 @@
       );
     }
     return out.join("");
+  }
+
+  /* Vertical extent of the drawn curve over a pixel span, sampling the same Catmull-Rom
+     segments the path is built from. Used to keep a label off the water: the box either
+     sits wholly above the highest sample or wholly below the lowest one. */
+  function curveSpan(runs, x0, x1) {
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (const pts of runs) {
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i - 1] || pts[i];
+        const p1 = pts[i];
+        const p2 = pts[i + 1];
+        const p3 = pts[i + 2] || p2;
+        const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+        const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+        const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+        const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+        for (let s = 0; s <= 12; s++) {
+          const t = s / 12;
+          const mt = 1 - t;
+          const bx = mt ** 3 * p1[0] + 3 * mt * mt * t * c1x + 3 * mt * t * t * c2x + t ** 3 * p2[0];
+          if (bx < x0 || bx > x1) continue;
+          const by = mt ** 3 * p1[1] + 3 * mt * mt * t * c1y + 3 * mt * t * t * c2y + t ** 3 * p2[1];
+          if (by < lo) lo = by;
+          if (by > hi) hi = by;
+        }
+      }
+    }
+    return hi === -Infinity ? null : [lo, hi];
   }
 
   /* Catmull-Rom -> cubic bezier: hourly tide values are smooth, and a polyline reads
@@ -588,7 +633,17 @@
       }),
     ];
 
-    const marks = labelTurns(m, x, y, cl, top, bottom, W, occupied);
+    /* A label has to clear the water itself, not just the other words. The box here is
+       estimated from the font size (boxOf), and an estimate that is 1-2px optimistic
+       reads as "the label is touching the line", so the box is inflated a touch before
+       it is compared. */
+    const CURVE_PAD_PX = 3;
+    const curveClear = (b) => {
+      const span = curveSpan(runs, b.x1, b.x2);
+      if (!span) return true;
+      return b.y2 + CURVE_PAD_PX <= span[0] || b.y1 - CURVE_PAD_PX >= span[1];
+    };
+    const marks = labelTurns(m, x, y, cl, top, bottom, W, occupied, curveClear);
 
     const hours = [0, 6, 12, 18, 23]
       .map(
