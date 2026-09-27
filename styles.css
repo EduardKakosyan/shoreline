@@ -2413,8 +2413,14 @@ html[data-theme="dark"] .empty-state {
   }
   body.is-coastal [data-testid="current-weather"] {
     align-self: stretch;
+    /* so the poster card itself fills it: stretching only the section would move the
+       void from under the row into the section, which the eye still reads as a hole */
+    display: flex;
+    flex-direction: column;
   }
   body.is-coastal .hero {
+    flex: 1 1 auto;
+    /* the extra height becomes air inside the poster, not a gap under it */
     justify-content: space-between;
   }
   body.is-coastal [data-testid="hourly"] {

@@ -36,6 +36,32 @@ const MEASURE = `(() => {
   const gap = (a, b) => (sameCol(a, b) ? b.y - a.bottom : null);
   out.gapHeroHours = gap(out.hero, out.hours);
   out.gapHoursWeek = gap(out.hours, out.week);
+  /* A hole is a run of bare page inside a column. Measured from the boxes of that
+     column's own blocks: card gaps here run 8-22px, so a stretch of nothing between two
+     stacked blocks is a hole, not a gap. (Hit-testing was the obvious way and cannot
+     work: elementFromPoint answers null for anything below the viewport, and the whole
+     page is 1.5 viewports tall.) */
+  const blocksIn = (colX, colW) => {
+    const sel = '#current-weather > .hero, #hourly-section, #forecast-section, #water-body > *';
+    const centre = colX + colW / 2;
+    return [...document.querySelectorAll(sel)]
+      .map(function (el) { const r = el.getBoundingClientRect(); return { y: r.y, bottom: r.bottom, x: r.x, w: r.width }; })
+      .filter(function (b) { return b.w > 1 && Math.abs(b.x + b.w / 2 - centre) < colW / 2; })
+      .sort(function (a, b) { return a.y - b.y; });
+  };
+  out.columnGaps = [];
+  const scan = function (label, col) {
+    if (!col) return;
+    const bs = blocksIn(col.x, col.w);
+    let worst = 0, pair = '';
+    for (let i = 1; i < bs.length; i++) {
+      const g = Math.round(bs[i].y - bs[i - 1].bottom);
+      if (g > worst) { worst = g; pair = 'block ' + (i - 1) + ' to ' + i; }
+    }
+    out.columnGaps.push({ label: label, px: worst, at: pair, blocks: bs.length });
+  };
+  if (out.hero) scan('sky column', out.hero);
+  if (out.water) scan('water column', out.water);
   out.hoursSharesHeroColumn = sameCol(out.hero, out.hours);
   const bottoms = {};
   for (const k of ['hero','water','hours','week']) if (out[k]) bottoms[k] = out[k].bottom;
@@ -67,6 +93,9 @@ const MEASURE = `(() => {
       const hole = Math.round(rightB - leftB);
       const flags = [];
       if (m.gapHeroHours !== null && m.gapHeroHours > 40) flags.push(`hole under the hero: ${m.gapHeroHours}px`);
+      for (const g of m.columnGaps || []) {
+        if (g.px > 40) flags.push(`hole in the ${g.label}: ${g.px}px of bare page between blocks ${g.at} of ${g.blocks}`);
+      }
       if (m.coastal && Math.abs(hole) > 120) flags.push(`columns unbalanced by ${Math.abs(hole)}px`);
       // the 24-hour strip must not be squeezed into one column of a two-column page
       if (m.coastal && m.columns.hours && m.columns.hours.w < m.shell.w * 0.9) {
@@ -94,7 +123,7 @@ const MEASURE = `(() => {
         `${flags.length ? 'FAIL' : 'ok  '} ${vp.tag.padEnd(9)} ${place.padEnd(8)}` +
           ` coastal=${m.coastal ? 'y' : 'n'}` +
           ` hero=[${fmt(m.hero)}] water=[${fmt(m.water)}] hours=[${fmt(m.hours)}] week=[${fmt(m.week)}]` +
-          ` gapHeroHours=${m.gapHeroHours} hoursShown=${m.stripShown || 24}/24 docH=${m.doc.h}` +
+          ` gapHeroHours=${m.gapHeroHours} hoursShown=${m.stripShown || 24}/24 docH=${m.doc.h} bare=${(m.columnGaps||[]).map((g)=>g.label+':'+g.px).join(',') || 'none'}` +
           (flags.length ? `\n        ${flags.join('; ')}` : '') +
           (childBoxes.length ? `\n        ${childBoxes.join(' | ')}` : ''),
       );
