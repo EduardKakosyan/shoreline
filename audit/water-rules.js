@@ -159,4 +159,65 @@ check('flat tide: no turns', flatModel.turns.length, 0);
 check('flat tide: trend per the rule', flatModel.trend, 'Falling');
 console.log(`     flat best-times: ${W.bestTimes(flatModel)}`);
 
+/* ---- the amended turn rule: a run of equal readings is ONE turn ----
+   The acceptance fixtures are smooth by construction, so nothing in checks/ can catch a
+   regression here. The operator found the bug on live data (Honolulu held 0.93 m at both
+   03:00 and 04:00, 0.26 m at 21:00 and 22:00), so these cases are pinned directly. */
+check(
+  'fixture series has no equal adjacent hours (so the strict oracle above stays valid)',
+  Object.keys(MARINE).map((k) => {
+    const v = seaLevelSeries(k);
+    return v.slice(0, 24).some((x, i) => i > 0 && x === v[i - 1]);
+  }),
+  [false, false, false, false],
+);
+
+const HOURS = Array.from({ length: 120 }, (_, h) => {
+  const d = DAY_DATES[Math.floor(h / 24)];
+  return `${d}T${String(h % 24).padStart(2, '0')}:00`;
+});
+const marineWithLevels = (levels, key = 'cascais') => ({
+  current: { ...MARINE[key].current, sea_level_height_msl: levels[12], time: CURRENT_TIME },
+  hourly: { time: HOURS, sea_level_height_msl: levels },
+});
+const turnsOf = (levels) =>
+  W.tideTurns(marineWithLevels(levels), DAY_DATES[0]).map((t) => [t.kind, t.time, t.heightM]);
+const shape = (spec) => {
+  const out = Array(120).fill(null);
+  for (let h = 0; h < 24; h++) out[h] = typeof spec === 'function' ? spec(h) : 0;
+  return out;
+};
+
+// 1. two-hour top -> exactly one High, stamped with the run's FIRST hour
+check('plateau high (2h): one turn at the run start', turnsOf(shape((h) => (h < 5 ? h : h < 7 ? 5 : 10 - h))), [['High', '05:00', 5]]);
+// 2. two-hour bottom -> exactly one Low, stamped with the run's FIRST hour
+check('plateau low (2h): one turn at the run start', turnsOf(shape((h) => (h < 5 ? 5 - h : h < 7 ? 0 : h - 6))), [['Low', '05:00', 0]]);
+// 3. three or more equal hours at the top -> still one turn
+check('plateau high (4h): still one turn', turnsOf(shape((h) => (h < 4 ? h : h < 8 ? 4 : 12 - h))), [['High', '04:00', 4]]);
+// 4. an ordinary single-hour peak is unaffected
+check('single-hour peak still works', turnsOf(shape((h) => (h < 6 ? h : 12 - h))), [['High', '06:00', 6]]);
+// 5. a plateau touching the start of the series has no water before it -> never a turn
+check('plateau at series start is never a turn', turnsOf(shape((h) => (h < 2 ? 5 : 5 - (h - 1) / 2))), []);
+// 6. a plateau touching the END of the series has no water after it -> never a turn
+check('plateau at series end is never a turn', (() => {
+  const a = Array.from({ length: 120 }, (_, h) => (h <= 118 ? h : 118));
+  return W.tideTurns(marineWithLevels(a), DAY_DATES[4]).map((t) => [t.kind, t.time]);
+})(), []);
+// 7. equal readings separated by a null are two unrelated readings, not a plateau
+check('null inside a run breaks it', turnsOf([4, 5, null, 5, 4, 3, 2, 1, 0, ...Array(111).fill(null)]), []);
+// 8. the operator's own Honolulu readings: both plateaus must produce a turn
+check(
+  "operator's Honolulu series: plateau high and plateau low both found",
+  turnsOf([0.5, 0.7, 0.85, 0.93, 0.93, 0.8, 0.6, 0.45, 0.3, 0.26, 0.26, 0.3, 0.5, 0.68, 0.8, 0.9, 0.95, 0.9, 0.75, 0.55, 0.4, 0.26, 0.26, 0.35]),
+  [['High', '03:00', 0.93], ['Low', '09:00', 0.26], ['High', '16:00', 0.95], ['Low', '21:00', 0.26]],
+);
+// 9. the fishing verdict reads the plateau turns too, not just the list
+{
+  const lv = shape((h) => (h < 6 ? h : h < 8 ? 6 : 14 - h)); // plateau high across 06:00-07:00
+  const mm = W.model(forecastJson('cascais'), marineWithLevels(lv, 'cascais'));
+  const f = W.fishingVerdict(mm.inputs);
+  check('plateau high inside the dawn window counts for fishing', f.rating, 'Good');
+  check('and the Good reason names the window', /dawn/i.test(f.reason), true);
+}
+
 process.exit(fails ? 1 : 0);

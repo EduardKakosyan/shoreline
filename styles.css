@@ -2374,8 +2374,18 @@ html[data-theme="dark"] .empty-state {
 
 /* ==========================================================================
    A coastal place on a wide screen reads as a water dashboard: the verdicts and
-   the tide chart sit beside the current weather and the hours, with the week
-   across the bottom. Inland results keep the plain two-column layout above.
+   the tide chart beside the current weather. Inland results keep the plain
+   two-column layout above.
+
+   The two columns must END together, or a hole opens under whichever one is
+   shorter (the operator's review: "a large empty gap between the hero and the
+   hourly strip, while the water column runs long beside it"). So the left column
+   is the sky column - the poster plus the week, which together measure about what
+   the water column does - the hero stretches to soak up any slack (space-between
+   turns extra height into air inside the poster rather than a void under it), the
+   tide chart grows to fill whatever the water column has left, and the 24-hour
+   strip gets a row of its own across the whole width: squeezed into one column it
+   showed 7 of 24 hours, which is not a strip, it is a scrollbar.
    ========================================================================== */
 @media (min-width: 940px) {
   body.is-coastal .shell {
@@ -2384,13 +2394,28 @@ html[data-theme="dark"] .empty-state {
       "header  header"
       "search  search"
       "hero    water"
-      "hours   water"
-      "week    week"
+      "week    water"
+      "hours   hours"
       "recents recents"
       "foot    foot";
   }
   body.is-coastal [data-testid="water"] {
     grid-area: water;
+    /* fill the column, so the last panel sits level with the last card on the left */
+    align-self: stretch;
+  }
+  body.is-coastal #water-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  body.is-coastal [data-testid="current-weather"] {
+    align-self: stretch;
+  }
+  body.is-coastal .hero {
+    justify-content: space-between;
   }
   body.is-coastal [data-testid="hourly"] {
     grid-area: hours;
@@ -2398,12 +2423,21 @@ html[data-theme="dark"] .empty-state {
   body.is-coastal [data-testid="forecast-days"] {
     grid-area: week;
   }
-  /* The week runs across the bottom in two columns, so no card is stretched
-     to twice its measure. */
+  /* The week is in the sky column now, one card per row: two-up would stretch
+     each card past its measure for nothing. */
   body.is-coastal .days {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: 8px;
+  }
+  /* Slack in the water column belongs to the chart: more sea level per pixel is
+     the one thing in this panel you can always use more of. The panel is the
+     only flexible child, so it takes exactly what the week leaves. */
+  body.is-coastal .water__panel.tide {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  body.is-coastal .tide-chart {
+    flex: 1 1 auto;
+    min-height: var(--tide-chart-height, 176px);
   }
   body.is-coastal .hero .hero__icon {
     width: 84px;

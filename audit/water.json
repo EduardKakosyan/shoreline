@@ -14,19 +14,19 @@
     },
     "water": {
       "top": 445,
-      "bottom": 1317,
+      "bottom": 1354,
       "w": 358,
-      "h": 872
+      "h": 909
     },
     "hourly": {
-      "top": 1327,
-      "bottom": 1515,
+      "top": 1364,
+      "bottom": 1552,
       "w": 358,
       "h": 187
     },
     "week": {
-      "top": 1525,
-      "bottom": 2010,
+      "top": 1562,
+      "bottom": 2047,
       "w": 358,
       "h": 485
     },
@@ -90,19 +90,19 @@
     },
     "water": {
       "top": 445,
-      "bottom": 1288,
+      "bottom": 1305,
       "w": 358,
-      "h": 843
+      "h": 860
     },
     "hourly": {
-      "top": 1298,
-      "bottom": 1488,
+      "top": 1315,
+      "bottom": 1506,
       "w": 358,
       "h": 190
     },
     "week": {
-      "top": 1498,
-      "bottom": 1984,
+      "top": 1516,
+      "bottom": 2001,
       "w": 358,
       "h": 485
     },
@@ -148,7 +148,7 @@
       "15°C",
       "Waxing gibbous"
     ],
-    "best": "No turn near sunrise or sunset — the next low is at 17:00.",
+    "best": "No turn near sunrise or sunset today.",
     "errors": []
   },
   {
@@ -280,19 +280,19 @@
     },
     "water": {
       "top": 445,
-      "bottom": 1317,
+      "bottom": 1354,
       "w": 358,
-      "h": 872
+      "h": 909
     },
     "hourly": {
-      "top": 1327,
-      "bottom": 1515,
+      "top": 1364,
+      "bottom": 1552,
       "w": 358,
       "h": 187
     },
     "week": {
-      "top": 1525,
-      "bottom": 2010,
+      "top": 1562,
+      "bottom": 2047,
       "w": 358,
       "h": 485
     },
@@ -356,19 +356,19 @@
     },
     "water": {
       "top": 445,
-      "bottom": 1288,
+      "bottom": 1305,
       "w": 358,
-      "h": 843
+      "h": 860
     },
     "hourly": {
-      "top": 1298,
-      "bottom": 1488,
+      "top": 1315,
+      "bottom": 1506,
       "w": 358,
       "h": 190
     },
     "week": {
-      "top": 1498,
-      "bottom": 1984,
+      "top": 1516,
+      "bottom": 2001,
       "w": 358,
       "h": 485
     },
@@ -414,7 +414,7 @@
       "15°C",
       "Waxing gibbous"
     ],
-    "best": "No turn near sunrise or sunset — the next low is at 17:00.",
+    "best": "No turn near sunrise or sunset today.",
     "errors": []
   },
   {
@@ -546,32 +546,32 @@
     },
     "water": {
       "top": 173,
-      "bottom": 992,
+      "bottom": 1070,
       "w": 526,
-      "h": 819
+      "h": 896
     },
     "hourly": {
-      "top": 659,
-      "bottom": 846,
-      "w": 548,
+      "top": 1086,
+      "bottom": 1273,
+      "w": 1096,
       "h": 187
     },
     "week": {
-      "top": 1008,
-      "bottom": 1326,
-      "w": 1096,
-      "h": 318
+      "top": 539,
+      "bottom": 1044,
+      "w": 548,
+      "h": 505
     },
     "ratings": {
       "beach": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       },
       "fishing": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       }
@@ -622,32 +622,32 @@
     },
     "water": {
       "top": 173,
-      "bottom": 955,
+      "bottom": 1032,
       "w": 526,
-      "h": 781
+      "h": 859
     },
     "hourly": {
-      "top": 639,
-      "bottom": 829,
-      "w": 548,
+      "top": 1048,
+      "bottom": 1239,
+      "w": 1096,
       "h": 190
     },
     "week": {
-      "top": 971,
-      "bottom": 1289,
-      "w": 1096,
-      "h": 318
+      "top": 520,
+      "bottom": 1025,
+      "w": 548,
+      "h": 505
     },
     "ratings": {
       "beach": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       },
       "fishing": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       }
@@ -680,7 +680,7 @@
       "15°C",
       "Waxing gibbous"
     ],
-    "best": "No turn near sunrise or sunset — the next low is at 17:00.",
+    "best": "No turn near sunrise or sunset today.",
     "errors": []
   },
   {
@@ -698,32 +698,32 @@
     },
     "water": {
       "top": 173,
-      "bottom": 884,
+      "bottom": 1019,
       "w": 526,
-      "h": 711
+      "h": 845
     },
     "hourly": {
-      "top": 603,
-      "bottom": 794,
-      "w": 548,
+      "top": 1035,
+      "bottom": 1225,
+      "w": 1096,
       "h": 190
     },
     "week": {
-      "top": 900,
-      "bottom": 1218,
-      "w": 1096,
-      "h": 318
+      "top": 513,
+      "bottom": 1019,
+      "w": 548,
+      "h": 505
     },
     "ratings": {
       "beach": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       },
       "fishing": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       }
@@ -735,12 +735,12 @@
     "tempPx": 108,
     "chart": {
       "w": 488,
-      "h": 174
+      "h": 268
     },
     "chartBox": {
-      "vb": "0 0 488 174",
+      "vb": "0 0 488 268",
       "w": 488,
-      "h": 174
+      "h": 268
     },
     "turns": [],
     "trend": "Falling",
@@ -812,32 +812,32 @@
     },
     "water": {
       "top": 173,
-      "bottom": 992,
+      "bottom": 1070,
       "w": 526,
-      "h": 819
+      "h": 896
     },
     "hourly": {
-      "top": 659,
-      "bottom": 846,
-      "w": 548,
+      "top": 1086,
+      "bottom": 1273,
+      "w": 1096,
       "h": 187
     },
     "week": {
-      "top": 1008,
-      "bottom": 1326,
-      "w": 1096,
-      "h": 318
+      "top": 539,
+      "bottom": 1044,
+      "w": 548,
+      "h": 505
     },
     "ratings": {
       "beach": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       },
       "fishing": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       }
@@ -888,32 +888,32 @@
     },
     "water": {
       "top": 173,
-      "bottom": 955,
+      "bottom": 1032,
       "w": 526,
-      "h": 781
+      "h": 859
     },
     "hourly": {
-      "top": 639,
-      "bottom": 829,
-      "w": 548,
+      "top": 1048,
+      "bottom": 1239,
+      "w": 1096,
       "h": 190
     },
     "week": {
-      "top": 971,
-      "bottom": 1289,
-      "w": 1096,
-      "h": 318
+      "top": 520,
+      "bottom": 1025,
+      "w": 548,
+      "h": 505
     },
     "ratings": {
       "beach": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       },
       "fishing": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       }
@@ -946,7 +946,7 @@
       "15°C",
       "Waxing gibbous"
     ],
-    "best": "No turn near sunrise or sunset — the next low is at 17:00.",
+    "best": "No turn near sunrise or sunset today.",
     "errors": []
   },
   {
@@ -964,32 +964,32 @@
     },
     "water": {
       "top": 173,
-      "bottom": 884,
+      "bottom": 1019,
       "w": 526,
-      "h": 711
+      "h": 845
     },
     "hourly": {
-      "top": 603,
-      "bottom": 794,
-      "w": 548,
+      "top": 1035,
+      "bottom": 1225,
+      "w": 1096,
       "h": 190
     },
     "week": {
-      "top": 900,
-      "bottom": 1218,
-      "w": 1096,
-      "h": 318
+      "top": 513,
+      "bottom": 1019,
+      "w": 548,
+      "h": 505
     },
     "ratings": {
       "beach": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       },
       "fishing": {
-        "top": 240,
-        "bottom": 271,
+        "top": 244,
+        "bottom": 276,
         "w": 223,
         "h": 32
       }
@@ -1001,12 +1001,12 @@
     "tempPx": 108,
     "chart": {
       "w": 488,
-      "h": 174
+      "h": 268
     },
     "chartBox": {
-      "vb": "0 0 488 174",
+      "vb": "0 0 488 268",
       "w": 488,
-      "h": 174
+      "h": 268
     },
     "turns": [],
     "trend": "Falling",

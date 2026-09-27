@@ -391,10 +391,20 @@
   }
 
   /* A standing answer to "so when do I put the wetsuit on", so the tide panel always
-     names the turn still to come, including one that lands tomorrow. */
+     names the turn still to come, including one that lands tomorrow. When today's tides
+     are genuinely over and the forecast has nothing further, say so plainly rather than
+     leaving the reader to wonder whether the panel simply broke. */
   function nextLine(m) {
     const next = nextTurn(m);
-    if (!next) return "";
+    if (!next) {
+      const done =
+        (m.turns || []).length > 0 &&
+        m.nowHour !== null &&
+        (m.turns || []).every((t) => t.hour <= m.nowHour);
+      return done
+        ? `<p class="next-turn"><span class="next-turn__now">Today's tides are done.</span></p>`
+        : '';
+    }
     const rest = (m.turns || []).filter((t) => m.nowHour !== null && t.hour > m.nowHour).slice(1);
     const more = rest.length
       ? ` <span class="next-turn__more">${esc(rest.map((t) => `${t.kind} ${t.time}`).join(" \u00b7 "))}</span>`
@@ -751,6 +761,8 @@
     seaTempText,
     seaPeriodText,
     bestTimes,
+    nextTurn,
+    nextLine,
     beachVerdict,
     fishingVerdict,
     MOON_NAMES,
@@ -773,21 +785,26 @@
     const box = node.querySelector('[data-testid="tide-chart"]');
     if (!box) return;
     let lastW = 0;
+    let lastH = 0;
     const draw = () => {
       const w = box.clientWidth || 0;
+      const h = box.clientHeight || 136;
       if (!w) return false;
       /* Only repaint when the box actually changes size, otherwise a repaint would
-         wipe a text selection out from under someone reading the page. */
-      if (w === lastW) return true;
+         wipe a text selection out from under someone reading the page. Height counts
+         too: on a wide screen the chart is the flexible block in its column, so it
+         grows with the column rather than keeping the size it first happened to get. */
+      if (w === lastW && h === lastH) return true;
       lastW = w;
-      box.innerHTML = tideChart(m, w, box.clientHeight || 136);
+      lastH = h;
+      box.innerHTML = tideChart(m, w, h);
       return true;
     };
     if (!draw() && typeof requestAnimationFrame === "function") requestAnimationFrame(draw);
     if (typeof ResizeObserver === "function") {
       if (box.__tideResize) box.__tideResize.disconnect();
       const ro = new ResizeObserver(() => {
-        if (Math.abs(box.clientWidth - lastW) > 1) draw();
+        if (Math.abs(box.clientWidth - lastW) > 1 || Math.abs(box.clientHeight - lastH) > 1) draw();
       });
       ro.observe(box);
       box.__tideResize = ro;
