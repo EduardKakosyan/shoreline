@@ -92,27 +92,59 @@
     return out;
   }
 
-  /* A slot is a High when strictly above both neighbouring hours, a Low when strictly
-     below. Walked over the whole series, so today's first hour still has yesterday as a
-     neighbour, while the very first slot of the series has none and is never a turn. */
+  /* A High is a hour (or a run of hours) higher than the water on both sides of it, a
+     Low lower on both sides. Comparing one slot against its two neighbours — the
+     brief's original wording — loses real turns: the model routinely holds the same
+     value for two hours at the top or the bottom of a curve, and 0.93, 0.93 then has no
+     neighbour pair that is strictly beaten, so Honolulu's 03:00 high never appeared and
+     the chart peaked at 3 a.m. while the list said nothing. So a run of two or more
+     consecutive equal readings counts as ONE turn, judged by the readings just outside
+     the run, and its time is the run's first hour. Used for the list, the chart markers
+     and the fishing verdict alike. A run at either end of the series has no water on one
+     side, so it is never a turn. */
   function tideTurns(marine, today) {
     const hourly = (marine && marine.hourly) || {};
     const times = hourly.time || [];
     const levels = hourly.sea_level_height_msl || [];
     const turns = [];
-    for (let i = 1; i < times.length - 1; i++) {
-      if (String(times[i] || "").slice(0, 10) !== today) continue;
+    let i = 0;
+    while (i < times.length) {
       const v = num(levels[i]);
-      const prev = num(levels[i - 1]);
-      const next = num(levels[i + 1]);
-      if (v === null || prev === null || next === null) continue;
-      const time = String(times[i]).slice(11, 16);
-      if (!/^\d{2}:00$/.test(time)) continue;
-      const hour = Number(time.slice(0, 2));
-      if (v > prev && v > next) turns.push({ kind: "High", hour, time, heightM: v });
-      else if (v < prev && v < next) turns.push({ kind: "Low", hour, time, heightM: v });
+      if (v === null) {
+        i += 1;
+        continue;
+      }
+      let j = i;
+      while (j + 1 < times.length) {
+        const w = num(levels[j + 1]);
+        /* Only a run of the same value, and only across contiguous hours: a gap in the
+           series or a jump to another day must break it, or a null-separated pair of
+           identical readings would read as a plateau. */
+        if (w === null || w !== v || !isNextHour(times[j], times[j + 1])) break;
+        j += 1;
+      }
+      const before = i > 0 ? num(levels[i - 1]) : null;
+      const after = j + 1 < times.length ? num(levels[j + 1]) : null;
+      if (before !== null && after !== null) {
+        const date = String(times[i] || "").slice(0, 10);
+        const time = String(times[i]).slice(11, 16);
+        if (date === today && /^\d{2}:00$/.test(time)) {
+          const hour = Number(time.slice(0, 2));
+          if (v > before && v > after) turns.push({ kind: "High", hour, time, heightM: v });
+          else if (v < before && v < after) turns.push({ kind: "Low", hour, time, heightM: v });
+        }
+      }
+      i = j + 1;
     }
     return turns;
+  }
+
+  /* Contiguous in the series, and one hour apart in time. */
+  function isNextHour(a, b) {
+    const ta = Date.parse(`${String(a).slice(0, 13)}:00:00Z`);
+    const tb = Date.parse(`${String(b).slice(0, 13)}:00:00Z`);
+    if (Number.isNaN(ta) || Number.isNaN(tb)) return false;
+    return tb - ta === 3600000;
   }
 
   /* Rising when the sea level an hour from now is higher than at the current hour. */
@@ -280,6 +312,10 @@
     const nowHour = Number(hourSlot(nowIso).slice(11, 13));
     const mcur = (marine && marine.current) || {};
     const turns = tideTurns(marine, today);
+    /* Tomorrow's turns exist only so the app can answer "what happens next" once
+       today's last turn has gone, instead of quoting a time that has already passed. */
+    const tomorrow = nextDay(today);
+    const laterTurns = tomorrow ? tideTurns(marine, tomorrow) : [];
 
     const inputs = {
       waveHeight: num(mcur.wave_height),
@@ -296,6 +332,8 @@
 
     return {
       today,
+      tomorrow,
+      laterTurns,
       nowHour: Number.isFinite(nowHour) ? nowHour : null,
       series: todaySeries(marine, today),
       turns,
@@ -316,6 +354,31 @@
   }
 
   /* ---------------- "when" in plain words ---------------- */
+  function nextDay(day) {
+    const t = Date.parse(`${day}T12:00:00Z`);
+    if (Number.isNaN(t)) return null;
+    return new Date(t + 86400000).toISOString().slice(0, 10);
+  }
+
+  /* The next turn is the next one AFTER now — strictly after, because a turn stamped
+     21:00 has gone by 21:27 and reading it as "next" is the one thing that makes a
+     person lose trust in the whole panel. When today's tides are done, say which of
+     tomorrow's turns is next rather than wrapping around to this morning. */
+  function nextTurn(m) {
+    if (m.nowHour === null) return null;
+    const later = (m.turns || []).find((t) => t.hour > m.nowHour);
+    if (later) return { ...later, day: "today" };
+    const tm = (m.laterTurns || [])[0];
+    if (tm) return { ...tm, day: "tomorrow" };
+    return null;
+  }
+
+  /* "High at 15:00" / "High tomorrow at 03:00" — the day goes in before the time, so a
+     reader never mistakes a tomorrow hour for one still to come today. */
+  function atWords(t) {
+    return t.day === "tomorrow" ? `tomorrow at ${t.time}` : `at ${t.time}`;
+  }
+
   function bestTimes(m) {
     const dawn = m.turns.filter((t) => inWindow(t.hour * 60, m.inputs.sunriseMin));
     const dusk = m.turns.filter((t) => inWindow(t.hour * 60, m.inputs.sunsetMin));
@@ -323,11 +386,22 @@
     if (dawn.length) bits.push(`${dawn[0].kind.toLowerCase()} water at dawn (${dawn[0].time})`);
     if (dusk.length) bits.push(`${dusk[0].kind.toLowerCase()} water at dusk (${dusk[0].time})`);
     if (bits.length) return `Low light meets a turning tide: ${listUp(bits)}.`;
-    if (m.turns.length) {
-      const next = m.turns.find((t) => m.nowHour !== null && t.hour >= m.nowHour) || m.turns[0];
-      return `No turn near sunrise or sunset — the next ${next.kind.toLowerCase()} is at ${next.time}.`;
-    }
+    if (m.turns.length) return "No turn near sunrise or sunset today.";
     return "No clear turn in today's hourly sea level.";
+  }
+
+  /* A standing answer to "so when do I put the wetsuit on", so the tide panel always
+     names the turn still to come, including one that lands tomorrow. */
+  function nextLine(m) {
+    const next = nextTurn(m);
+    if (!next) return "";
+    const rest = (m.turns || []).filter((t) => m.nowHour !== null && t.hour > m.nowHour).slice(1);
+    const more = rest.length
+      ? ` <span class="next-turn__more">${esc(rest.map((t) => `${t.kind} ${t.time}`).join(" \u00b7 "))}</span>`
+      : "";
+    return `<p class="next-turn"><span class="next-turn__label">Next tide</span> <span class="next-turn__now">${esc(
+      `${next.kind} ${atWords(next)}`,
+    )}</span>${more}</p>`;
   }
 
   /* A local's shorthand for water temperature — never a score. */
@@ -627,6 +701,7 @@
             : ""
         }
         <ul class="tide-events">${events}</ul>
+        ${nextLine(m)}
         <p class="best-times">${esc(bestTimes(m))}</p>
         <p class="tide-note" data-testid="tide-note">Tide times are approximate — hourly model values, not a harbour table.</p>
       </section>

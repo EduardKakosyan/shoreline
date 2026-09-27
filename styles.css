@@ -2087,6 +2087,38 @@ html[data-theme="dark"] .empty-state {
   font-variant-numeric: tabular-nums;
 }
 
+/* The one line in the tide panel that is always about the future, so it reads first
+   and the dawn/dusk commentary reads after it. */
+.next-turn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 8px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.next-turn__label {
+  color: var(--water-muted);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.next-turn__now {
+  color: var(--water-ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.next-turn__more {
+  color: var(--water-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .best-times {
   margin: 0;
   font-size: 0.875rem;
