@@ -17,6 +17,9 @@ const BASE = process.env.APP_URL || 'http://localhost:3000';
 const OPTS = { text: true, coverage: ['start'], tap: true, overflow: true };
 const EVENING = '2026-09-24T21:27';
 const NOON = '2026-09-24T12:00';
+/* cascais is enough for the gate; pointArena is the worst honest case (four turns and
+   both reasons naming every factor), so a wide sweep must include it. */
+const PLACES = (process.env.TOMORROW_PLACES || 'cascais').split(',');
 
 let fails = 0;
 const check = (name, ok, detail) => {
@@ -63,9 +66,12 @@ const open = async (page, key, now, theme) => {
 const run = async () => {
   const browser = await chromium.launch();
   const dayBaseline = {};
-  for (const vp of [{ width: 320, height: 720 }, { width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+  const VIEWPORTS = [{ width: 320, height: 720 }, { width: 390, height: 844 }, { width: 1280, height: 800 }];
+  const wanted = process.env.TOMORROW_VIEWPORTS ? process.env.TOMORROW_VIEWPORTS.split(',').map((t) => VIEWPORTS.find((v) => `${v.width}x${v.height}` === t)) : VIEWPORTS;
+  for (const vp of wanted) {
     for (const theme of ['light', 'dark']) {
-      const tag = `${vp.width}x${vp.height} ${theme}`;
+    for (const key of PLACES) {
+      const tag = `${key} ${vp.width}x${vp.height} ${theme}`;
       const ctx = await browser.newContext({ viewport: vp });
       const page = await ctx.newPage();
       const errors = [];
@@ -73,14 +79,14 @@ const run = async () => {
       page.on('pageerror', (e) => errors.push(String(e)));
 
       // daytime: the acceptance state — the line must not exist at all
-      await open(page, 'cascais', NOON, theme);
+      await open(page, key, NOON, theme);
       const day = await page.evaluate(READ);
       const k = `${vp.width}x${vp.height}`;
       dayBaseline[k] = day;
       check(`${tag} noon: no tomorrow line rendered`, !day.has, day.text);
 
       // evening: the line must be there, visible, inside the tide panel
-      await open(page, 'cascais', EVENING, theme);
+      await open(page, key, EVENING, theme);
       const eve = await page.evaluate(READ);
       check(`${tag} evening: the line renders and is visible`, eve.has && eve.shown);
       check(`${tag} evening: it sits inside the tide panel`, eve.inPanel);
@@ -120,8 +126,11 @@ const run = async () => {
       check(`${tag} evening: the document still does not scroll sideways`, res.doc.scrollWidth <= vp.width + 1, JSON.stringify(res.doc));
       check(`${tag} evening: no console output`, errors.length === 0, errors.join(' | '));
 
-      await page.screenshot({ path: path.join(__dirname, `tomorrow-${vp.width}x${vp.height}-${theme}.png`), fullPage: vp.width > 900 });
+      if (PLACES.length === 1) {
+        await page.screenshot({ path: path.join(__dirname, `tomorrow-${vp.width}x${vp.height}-${theme}.png`), fullPage: vp.width > 900 });
+      }
       await ctx.close();
+    }
     }
   }
   await browser.close();
