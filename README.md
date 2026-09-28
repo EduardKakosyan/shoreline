@@ -1,5 +1,7 @@
 # Shoreline
 
+**▶ Live: https://eduardkakosyan.github.io/shoreline/**
+
 **Is today a day at the water?** Shoreline is a mobile-first web app for beach-goers, swimmers and anglers. Search a coastal town and the first screen tells you whether today is Good, Fair or Poor for the beach and for fishing, and why, in plain words. Below that come today's tides on a chart with dawn and dusk marked, the sea state (waves, swell, water temperature), the moon, and the weather around it all. Inland places get a clean weather app with nothing about the sea.
 
 > **Not a line of this app was written by a person.** Shoreline was built from scratch by a local open-weights model, Qwen3.8-Flash-Next, running unattended on one NVIDIA DGX Spark inside [**dgx-autonomy**](https://github.com/EduardKakosyan/dgx-autonomy), a self-governing build loop. Briefs and product reviews came from a person and a supervising Claude session; the first brief was drafted in a planning session with the same local model. The builder wrote, tested, designed and committed every one of the 42 commits in this history on its own, across three runs between 24 and 28 September 2026.
