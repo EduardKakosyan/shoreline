@@ -330,10 +330,13 @@
       sunset: String((daily.sunset || [])[0] || "").slice(11, 16),
     };
 
+    const next = tomorrowFacts(forecast, marine, tomorrow, nowIso);
+
     return {
       today,
       tomorrow,
       laterTurns,
+      next,
       nowHour: Number.isFinite(nowHour) ? nowHour : null,
       series: todaySeries(marine, today),
       turns,
@@ -388,6 +391,87 @@
     if (bits.length) return `Low light meets a turning tide: ${listUp(bits)}.`;
     if (m.turns.length) return "No turn near sunrise or sunset today.";
     return "No clear turn in today's hourly sea level.";
+  }
+
+  /* ---------------- the day after today ---------------- */
+  /* Minutes into the local day, so "is it past sunset" can be answered at all — the
+     contract's `nowHour` is hour-only, and 19:26 is not the same moment as 19:00. */
+  function minuteOfDay(iso) {
+    const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/.exec(String(iso || ""));
+    if (!m) return null;
+    return Number(m[2]) * 60 + Number(m[3]);
+  }
+
+  /* What the requested fields actually say about tomorrow. Tomorrow's WIND is absent by
+     design: the fixed forecast request carries an hourly temperature/weather/precip
+     series and no hourly wind, and the beach rule needs wind — so tomorrow can be
+     described, never rated. Nothing here runs the beach or fishing rule. */
+  function tomorrowFacts(forecast, marine, tomorrow, nowIso) {
+    const daily = (forecast && forecast.daily) || {};
+    const mHourly = (marine && marine.hourly) || {};
+    const dayIndex = (daily.time || []).findIndex((d) => String(d).slice(0, 10) === tomorrow);
+    const day = dayIndex >= 0 ? tomorrow : null;
+    const at = (arr) => (day ? num((arr || [])[dayIndex]) : null);
+    let waveMax = null;
+    if (day) {
+      const times = mHourly.time || [];
+      const levels = mHourly.wave_height || [];
+      for (let i = 0; i < times.length; i++) {
+        if (String(times[i] || "").slice(0, 10) !== day) continue;
+        const v = num(levels[i]);
+        if (v !== null && (waveMax === null || v > waveMax)) waveMax = v;
+      }
+    }
+    return {
+      day,
+      nowMinute: day ? minuteOfDay(nowIso) : null,
+      waveMax,
+      precipMax: at(daily.precipitation_probability_max),
+      tempMax: at(daily.temperature_2m_max),
+      code: at(daily.weather_code),
+      turns: day ? tideTurns(marine, day) : [],
+    };
+  }
+
+  /* One word per WMO family, for a line that has no room for the contract's table. */
+  const TOMORROW_SKY = {
+    0: "clear", 1: "mostly clear", 2: "partly cloudy", 3: "cloudy",
+    45: "fog", 48: "fog", 95: "thunder", 96: "thunder", 99: "thunder",
+  };
+  const skyWord = (code) =>
+    code === null
+      ? null
+      : TOMORROW_SKY[code] ||
+        (code >= 80 && code <= 82 ? "showers" : code >= 71 && code <= 86 ? "snow" : code >= 51 && code <= 67 ? "rain" : "unsettled");
+
+  /* After sunset, "Beach today" is a verdict on a day that's over, so a quiet line says
+     what the data carries for tomorrow: the sea's worst hour, the daily rain/cloud and
+     high, and tomorrow's first turns. Facts only — never Good/Fair/Poor, so it cannot
+     contradict today's rules, and only ever printed once today has actually ended. */
+  function tomorrowLine(m) {
+    const n = m.next;
+    if (!n || !n.day) return "";
+    if (n.nowMinute === null || m.inputs.sunsetMin === null || n.nowMinute <= m.inputs.sunsetMin) return "";
+    const units = m.units || "C";
+    const bits = [];
+    if (n.waveMax !== null) bits.push(`waves up to ${lenText(n.waveMax, units)}`);
+    if (n.precipMax !== null && n.precipMax >= 30) bits.push(`${Math.round(n.precipMax)}% rain`);
+    else {
+      const sky = skyWord(n.code);
+      if (sky) bits.push(sky);
+    }
+    if (n.tempMax !== null) bits.push(`high ${tempText(n.tempMax, units, true)}`);
+    /* "Next tide" above already names tomorrow's first turn once today's are spent; say
+       it twice in one panel reads as filler, so the turns only appear when that line is
+       talking about a later hour today. */
+    const next = nextTurn(m);
+    const turns =
+      next && next.day === "tomorrow" ? [] : (n.turns || []).slice(0, 2).map((t) => `${t.kind.toLowerCase()} ${t.time}`);
+    if (turns.length) bits.push(`tide ${listUp(turns)}`);
+    if (!bits.length) return "";
+    return `<p class="tomorrow"><span class="tomorrow__label">Tomorrow</span> <span class="tomorrow__text">${esc(
+      `${bits.join(", ")}.`,
+    )}</span></p>`;
   }
 
   /* A standing answer to "so when do I put the wetsuit on", so the tide panel always
@@ -767,6 +851,7 @@
         }
         <ul class="tide-events">${events}</ul>
         ${nextLine(m)}
+        ${tomorrowLine(m)}
         <p class="best-times">${esc(bestTimes(m))}</p>
         <p class="tide-note" data-testid="tide-note">Tide times are approximate — hourly model values, not a harbour table.</p>
       </section>
@@ -818,6 +903,8 @@
     bestTimes,
     nextTurn,
     nextLine,
+    tomorrowLine,
+    tomorrowFacts,
     beachVerdict,
     fishingVerdict,
     MOON_NAMES,

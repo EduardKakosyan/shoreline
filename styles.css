@@ -2127,6 +2127,28 @@ html[data-theme="dark"] .empty-state {
   color: var(--water-ink);
 }
 
+/* After sunset the tide panel is the only block still talking about the future, so the
+   one line about tomorrow belongs here rather than under the verdicts, which are about
+   a day that has finished. Quiet by design: no rating word, no colour of its own. */
+.tomorrow {
+  margin: -2px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.tomorrow__label {
+  color: var(--water-muted);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tomorrow__text {
+  color: var(--water-muted);
+  font-weight: 600;
+}
+
 .tide-note {
   margin: 0;
   font-size: 0.75rem;

@@ -33,6 +33,8 @@ run "hero palette contrast" python3 tools/palette-check.py
 run "forecast rail hue (cool reads cool, not olive)" node audit/rail-hue.js
 run "water rules vs the fixture verdicts" node audit/water-rules.js
 run "next tide is always in the future" node audit/next-turn.js
+run "the tomorrow line is facts only, after sunset" node audit/tomorrow-line.js
+run "the tomorrow line renders, reads and holds the fold" node audit/tomorrow-render.js
 run "water first screen + chart fidelity" node audit/water-look.js
 run "water composition lint" node audit/water-lint.js
 run "desktop balance (no hole under the hero)" node audit/desktop-balance.js

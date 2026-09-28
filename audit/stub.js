@@ -204,6 +204,11 @@ async function installStub(page, opts = {}) {
           }
         : base;
     const isDayFlag = patch && patch.key === key ? patch.isDay ?? 1 : 1;
+    /* opts.now: shift `current.time`. Live Open-Meteo reports 15-minute marks, and an
+       audit needs an evening reading to render the after-sunset line at all. */
+    const nowTime = opts.now || '2026-09-24T12:00';
+    const currentNow = { ...city.current, apparent_temperature: Math.round(city.current.temperature_2m) - 1, is_day: isDayFlag };
+    delete currentNow.time;
     const time = [], temperature_2m = [], weather_code = [], is_day = [], precipitation_probability = [];
     DATES.forEach((d, di) => {
       const min = city.daily.temperature_2m_min[di];
@@ -222,7 +227,7 @@ async function installStub(page, opts = {}) {
       contentType: 'application/json',
       body: JSON.stringify({
         timezone: 'GMT',
-        current: { time: '2026-09-24T12:00', ...city.current, apparent_temperature: Math.round(city.current.temperature_2m) - 1, is_day: isDayFlag },
+        current: { time: nowTime, ...currentNow },
         hourly: { time, temperature_2m, weather_code, is_day, precipitation_probability },
         daily: {
           time: DATES,

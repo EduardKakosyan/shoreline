@@ -112,6 +112,8 @@ const BAD = /(NaN|undefined|Infinity|°C°C|--°|:NaN|null m|m m|\bnull\b)/;
           wind: txt('[data-testid="wind"]'),
           moon: txt('[data-testid="moon-phase"]'),
           chart: vis('[data-testid="tide-chart"]'),
+          tomorrow: txt('.tomorrow'),
+          tomorrowInPanel: !!(document.querySelector('.tomorrow') && document.querySelector('.tomorrow').closest('.water__panel.tide')),
           chartSvg: !!(document.querySelector('[data-testid="tide-chart"] svg')),
           scrollW: document.documentElement.scrollWidth,
           innerW: innerWidth,
@@ -152,6 +154,12 @@ const BAD = /(NaN|undefined|Infinity|°C°C|--°|:NaN|null m|m m|\bnull\b)/;
           problems.push(`${tag}: moon phase reads "${m.moon}"`);
         }
         if (!m.chartSvg) problems.push(`${tag}: no tide chart painted for a coastal place`);
+        /* The after-sunset line only exists on live evening data — no fixture renders it. */
+        if (m.tomorrow) {
+          if (/\b(good|fair|poor)\b/i.test(m.tomorrow)) problems.push(`${tag}: the tomorrow line carries a rating word — "${m.tomorrow}"`);
+          if (!m.tomorrowInPanel) problems.push(`${tag}: the tomorrow line is outside the tide panel`);
+          console.log(`  tmrw ${m.tomorrow.replace(/\s+/g, ' ').trim()}`);
+        }
         if (m.note && !/approximate/i.test(m.note)) problems.push(`${tag}: the tide note no longer says "approximate"`);
         if (!m.turns.length) console.log(`  note ${tag}: no tide turn today (${m.trend}) — the flat/edge-case path`);
         m.turns.forEach((t) => {
