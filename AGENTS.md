@@ -180,3 +180,30 @@ Two traps when measuring the curve:
 across its own x-range, and `labelTurns` escapes ±20px as well as sideways. A turn
 pinned at the top of the plot has no room above it at all, so "flip to the other side"
 is not enough — the escape has to go *below*, several steps if needed.
+
+## The after-sunset "Tomorrow" line (operator review #2, optional item 5)
+
+Once today is over, "Beach today" is a verdict on a day that has finished, so the tide
+panel ends with one quiet line about tomorrow (`tomorrowLine` in `water.js`): the sea's
+worst hour tomorrow, the daily rain-or-cloud word, the daily high, and tomorrow's first
+turns. Three decisions that are not obvious from the code:
+
+- **Facts, never a rating word.** The fixed forecast request carries hourly
+  temperature/weather/precip but **no hourly wind**, and the beach rule needs wind. A
+  known factor can prove "Poor"; nothing short of the full rule proves "Good". So a
+  Good/Fair/Poor word for tomorrow would be a guess — `audit/tomorrow-line.js` sweeps
+  3360 combinations and fails if one ever appears.
+- **Minutes precision, not the contract's hour.** `nowHour` is hour-only, and 19:26 is not
+  19:00; an hour-only gate prints "tomorrow" while the day is still up. The gate is
+  `nowMinute > sunsetMin` and the harness mutates it back to hour-only to prove the
+  assertion bites.
+- **It lives in the tide panel, under "Next tide"** — not under the verdicts. That keeps
+  the phone first-screen budget byte-identical (asserted: verdict and chart bottoms do
+  not move, 519px/817px of 844), and it says each tide turn once: when "Next tide" has
+  already pointed at tomorrow, the line drops its own tide bit.
+
+**Nothing in `checks/` can ever exercise this**: every acceptance fixture answers
+`current.time = 2026-09-24T12:00`, before the 19:26 sunset. `audit/stub.js` grew
+`opts.now` to shift `current.time`, which is how `audit/tomorrow-render.js` reaches the
+state in a browser (contrast/tap/overflow + fold, phone 320/390, desktop, both themes).
+The live pass reads it too — the only place it appears without a stub.

@@ -63,7 +63,7 @@ const open = async (page, key, now, theme) => {
 const run = async () => {
   const browser = await chromium.launch();
   const dayBaseline = {};
-  for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 800 }]) {
+  for (const vp of [{ width: 320, height: 720 }, { width: 390, height: 844 }, { width: 1280, height: 800 }]) {
     for (const theme of ['light', 'dark']) {
       const tag = `${vp.width}x${vp.height} ${theme}`;
       const ctx = await browser.newContext({ viewport: vp });

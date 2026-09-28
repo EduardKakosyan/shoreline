@@ -113,6 +113,13 @@ const BAD = /(NaN|undefined|Infinity|°C°C|--°|:NaN|null m|m m|\bnull\b)/;
           moon: txt('[data-testid="moon-phase"]'),
           chart: vis('[data-testid="tide-chart"]'),
           tomorrow: txt('.tomorrow'),
+          nextTide: txt('.next-turn'),
+          /* the current hour, read the way a reader does: the strip card tagged "Now" */
+          nowHour: (() => {
+            const now = [...document.querySelectorAll('[data-testid="hour-item"]')].find((li) => /\bNow\b/.test(li.textContent));
+            const l = now && now.querySelector('[data-testid="hour-label"]');
+            return l ? Number(l.textContent.slice(0, 2)) : null;
+          })(),
           tomorrowInPanel: !!(document.querySelector('.tomorrow') && document.querySelector('.tomorrow').closest('.water__panel.tide')),
           chartSvg: !!(document.querySelector('[data-testid="tide-chart"] svg')),
           scrollW: document.documentElement.scrollWidth,
@@ -154,6 +161,17 @@ const BAD = /(NaN|undefined|Infinity|°C°C|--°|:NaN|null m|m m|\bnull\b)/;
           problems.push(`${tag}: moon phase reads "${m.moon}"`);
         }
         if (!m.chartSvg) problems.push(`${tag}: no tide chart painted for a coastal place`);
+        /* Operator fix 2, on live data: a time already gone must never read as "next". */
+        if (m.nextTide) {
+          const line = m.nextTide.replace(/\s+/g, ' ').trim();
+          const done = /tides are done/i.test(line);
+          const at = line.match(/(tomorrow )?at (\d{2}):(\d{2})/);
+          if (!done && !at) problems.push(`${tag}: "Next tide" names no time — "${line}"`);
+          if (at && m.nowHour !== null && !at[1] && Number(at[2]) <= m.nowHour) {
+            problems.push(`${tag}: "Next tide" is at ${at[2]}:${at[3]} but it is already ${String(m.nowHour).padStart(2, '0')}:00 — "${line}"`);
+          }
+          if (done) console.log(`  note ${tag}: ${line}`);
+        }
         /* The after-sunset line only exists on live evening data — no fixture renders it. */
         if (m.tomorrow) {
           if (/\b(good|fair|poor)\b/i.test(m.tomorrow)) problems.push(`${tag}: the tomorrow line carries a rating word — "${m.tomorrow}"`);
