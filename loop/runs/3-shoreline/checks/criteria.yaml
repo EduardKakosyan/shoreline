@@ -1,0 +1,85 @@
+criteria:
+  - key: empty-state-on-first-load
+    description: A first visit shows an empty state that prompts for a search, with no weather and no default city
+    test: empty-state.spec.ts
+
+  - key: current-weather-after-search
+    description: Searching a single-match city shows its name, temperature, condition text, humidity and wind with units
+    test: current-weather.spec.ts
+
+  - key: five-day-forecast
+    description: After a search the app shows exactly five forecast days, each with day name, high, low and condition
+    test: forecast-days.spec.ts
+
+  - key: multi-match-picker
+    description: A search with several matches offers up to five "City, Region, Country" options and the picked one opens
+    test: city-picker.spec.ts
+
+  - key: no-results-and-service-error
+    description: No geocoding match shows a message, a failing forecast call shows an error with a working "Try again", and the app stays usable
+    test: errors.spec.ts
+
+  - key: unit-toggle-persisted
+    description: The C/F toggle converts all displayed temperatures and wind and is remembered across reloads
+    test: units-toggle.spec.ts
+
+  - key: recent-searches
+    description: The five most recent searches are chips persisted across reloads, tappable to reopen a city, with a clear button
+    test: recent-searches.spec.ts
+
+  - key: extended-weather-data
+    description: Feels-like temperature, sunrise/sunset, per-day precipitation probability and a 24-entry hourly strip render from the extended forecast
+    test: extended-data.spec.ts
+
+  - key: no-horizontal-overflow
+    description: At 390x844 there is no horizontal scrolling and no element wider than the viewport, in every state and both themes
+    test: no-horizontal-overflow.spec.ts
+
+  - key: text-contrast
+    description: Every visible text element (including the placeholder) has at least 4.5:1 contrast (3:1 for large text) against its effective background, in every state and both themes
+    test: text-contrast.spec.ts
+
+  - key: background-coverage
+    description: The theme background covers the whole viewport at every scroll position in every state and both themes - no unthemed strip at the bottom
+    test: background-coverage.spec.ts
+
+  - key: tap-targets
+    description: Buttons, chips and the unit/theme toggles are at least 44x44 px in every state and both themes
+    test: tap-targets.spec.ts
+
+  - key: theme-toggle-persisted
+    description: The button named "Theme" switches the theme and the choice is remembered across reloads
+    test: theme-toggle-persisted.spec.ts
+
+  - key: theme-follows-system
+    description: A first visit follows the operating system's light/dark preference
+    test: theme-follows-system.spec.ts
+
+  - key: loading-skeleton
+    description: A skeleton with testid "loading" is visible while the forecast request is in flight
+    test: loading-skeleton.spec.ts
+    required: false
+
+  - key: sea-conditions
+    description: A coastal place shows wave height and period, swell direction and sea temperature, today's tides (rising/falling, each high and low with time and height, a tide chart, an "approximate" note) and the moon phase, converted by the unit toggle
+    test: water-coastal.spec.ts
+
+  - key: beach-and-fishing-outlook
+    description: A coastal place rates today Good, Fair or Poor for the beach and for fishing by the brief's rules, and says why in plain words
+    test: water-outlook.spec.ts
+
+  - key: water-first-on-phones
+    description: On a phone, the beach and fishing ratings of a coastal place are on the first screen, and the water section comes before the hourly strip and forecast
+    test: water-first.spec.ts
+
+  - key: inland-and-sea-data-failure
+    description: An inland place shows nothing about the sea; when the sea data fails the weather still shows with a short note
+    test: water-inland-and-failure.spec.ts
+
+  - key: pleasant-on-phones-and-desktop
+    description: The app looks polished and pleasant on a phone (390x844) and on a desktop, in both light and dark themes, for coastal and inland places
+    kind: human_judgment
+
+  - key: a-day-at-the-water
+    description: For a coastal place the app reads as a companion for a day at the water first and a weather app second - the verdicts, the tide chart and the best times feel crafted, trustworthy and easy to act on
+    kind: human_judgment
